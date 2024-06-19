@@ -24,6 +24,5 @@ for file in os.listdir('./Stocks/'):
 	if df_2016.empty or len(df_2016.Date.dt.month.unique()) < 12:
 		continue
 
-
 	df = pd.concat([df_2015, df_2016])
 	df.to_csv(f'./{symbol}.csv', index=False)
