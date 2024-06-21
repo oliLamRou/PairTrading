@@ -47,6 +47,7 @@ class Polygon:
             return pd.DataFrame()
 
         results = r.json().get('results')
+        print(results)
         if results == None:
             return pd.DataFrame()
 
@@ -69,18 +70,46 @@ class Polygon:
         start = (self.today - timedelta(days=300)).strftime('%Y-%m-%d')
         url = f'v2/aggs/ticker/{symbol}/range/1/day/{start}/{end}?adjusted=true&sort=asc&apiKey={self.key}'
         df = self.get_data(url)
-        print(df)
         if df.empty:
             return True
         
         df.to_csv(f'../data/historical/{symbol}.csv', index = False)
 
+    def sector(self, symbol: str):
+        url = f'v3/reference/tickers/{symbol}?apiKey={self.key}'
+
+        r = requests.get(self.base_url + url)
+        if not r.status_code == 200:
+            print(r)
+            return pd.DataFrame()
+
+        results = r.json().get('results')
+        if results == None:
+            return pd.DataFrame()
+
+        return pd.DataFrame.from_dict(results, orient='index').T
 
 
 if __name__ == '__main__':
     p = Polygon()
-    gd = p.grouped_daily(update=True)
-    print(gd)
+    gd = p.grouped_daily(update=False)
+    path = '../data/ticker_details.csv'
+    ticker_details_df = pd.read_csv(path)
+    for ticker in gd['T'].to_list():
+        print(ticker)
+        if ticker in ticker_details_df['ticker'].to_list():
+            print(ticker)
+
+        # df = p.sector(ticker)
+        # df['updated'] = p.today
+        # ticker_details_df = pd.concat([ticker_details_df, df])
+        # ticker_details_df.to_csv(path, index=False)
+        # time.sleep(15)
+
+# df = pd.DataFrame()
+# # df = pd.DataFrame.from_dict(x, orient='index').T
+# df = pd.concat([df, pd.DataFrame.from_dict(x, orient='index').T])
+# print(df)
 
 
     # tickers = gd[(gd['c'] > 20) & (gd['c'] < 50) & (gd['v'] > 1000000)]['T'].to_list()
