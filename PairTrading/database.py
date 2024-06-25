@@ -25,17 +25,19 @@ class DataBase:
         self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
         print(self.cursor.fetchall())
 
-    def list_table_columns(self, table_name) -> list:
-        self.cursor.execute(f'''PRAGMA table_info({table_name})''')
-        columns = [col[1] for col in self.cursor.fetchall()]
-        print(columns)
-        return columns
-
-    def list_table_data(self, table_name):
+    def list_table_data(self, table_name: str):
         df = pd.read_sql_query(f"SELECT * FROM {table_name}", self.conn)
         print(df)
 
-    def create_table(self, table_name):
+    def get_table_columns(self, table_name: str) -> list:
+        self.cursor.execute(f'''PRAGMA table_info({table_name})''')
+        columns = [col[1] for col in self.cursor.fetchall()]
+        return columns
+
+    def _drop_table(self, table_name: str):
+        self.cursor.execute(f'DROP TABLE {table_name}')
+
+    def create_table(self, table_name: str):
         self.cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS {table_name} (id INTEGER PRIMARY KEY)'''
         )
@@ -45,7 +47,7 @@ class DataBase:
             columns: dict
         ):
         
-        current_columns = self.list_table_columns(table_name)
+        current_columns = self.get_table_columns(table_name)
         for column_name, column_type in columns.items():
             if column_name in current_columns:
                 continue
@@ -53,7 +55,7 @@ class DataBase:
             self.cursor.execute(f'''ALTER TABLE {table_name} ADD {column_name} {column_type}''') 
         
         self.conn.commit()
-        self.list_table_columns(table_name)
+        self.get_table_columns(table_name)
         
     def add_row(self, table_name: str, row: dict):
         columns = tuple(row.keys())
@@ -63,13 +65,10 @@ class DataBase:
 
 if __name__ == '__main__':
     db = DataBase('../data/sql.db')
-    db.create_table('new_table')
+    table_name = 'new_table'
+    db.create_table(table_name)
     db.list_tables()
-    db.add_columns('new_table', {'col1': 'TEXT', 'col2': 'INTEGER', 'col3': 'REAL'})
-    db.add_row('new_table', {'col1': 'ok', 'col2': 20})
-    db.list_table_data('new_table')
-
-
-
-
-
+    db.add_columns(table_name, {'col1': 'TEXT', 'col2': 'INTEGER', 'col3': 'REAL'})
+    db.add_row(table_name, {'col1': 'ok', 'col2': 20})
+    db.list_table_data(table_name)
+    db._drop_table(table_name)

@@ -99,7 +99,6 @@ class Filter(Polygon):
 
 if __name__ == '__main__':
     f = Filter()
-    f.
     # f.get_mosaic()
 
 

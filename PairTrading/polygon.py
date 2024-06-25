@@ -8,7 +8,7 @@ import json
 import time
 from datetime import timedelta
 
-from PairTrading.database import DataBase
+# from PairTrading.database import DataBase
 
 class Polygon(DataBase):
     ALL_SYMBOLS_PATH = '../data/all_symbol.csv'
@@ -98,6 +98,7 @@ class Polygon(DataBase):
 if __name__ == '__main__':
     p = Polygon('../data/sql.db')
     gd = p.grouped_daily(update=False)
+    p.create_table('ticker_details')
     path = '../data/ticker_details.csv'
     # ticker_details_df = pd.read_csv(path)
     # for ticker in gd['T'].to_list():
