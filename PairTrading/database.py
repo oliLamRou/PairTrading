@@ -63,12 +63,17 @@ class DataBase:
         self.cursor.execute(f"INSERT INTO {table_name} {columns} VALUES {values}")        
         self.conn.commit()
 
+    def get_rows(self, table_name, column_name, value):
+        self.cursor.execute(f"SELECT * FROM {table_name} WHERE {column_name} = ?", (value,))
+        return self.cursor.fetchall()
+
 if __name__ == '__main__':
     db = DataBase('../data/sql.db')
     table_name = 'new_table'
     db.create_table(table_name)
     db.list_tables()
-    db.add_columns(table_name, {'col1': 'TEXT', 'col2': 'INTEGER', 'col3': 'REAL'})
-    db.add_row(table_name, {'col1': 'ok', 'col2': 20})
+    # db.add_columns(table_name, {'col1': 'TEXT', 'col2': 'INTEGER', 'col3': 'REAL'})
+    # db.add_row(table_name, {'col1': 'ok', 'col2': 20})
     db.list_table_data(table_name)
-    db._drop_table(table_name)
+
+    # db._drop_table(table_name)

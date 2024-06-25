@@ -8,7 +8,8 @@ import json
 import time
 from datetime import timedelta
 
-# from PairTrading.database import DataBase
+from PairTrading.database import DataBase
+from PairTrading import _constant
 
 class Polygon(DataBase):
     ALL_SYMBOLS_PATH = '../data/all_symbol.csv'
@@ -84,33 +85,54 @@ class Polygon(DataBase):
         r = requests.get(self.base_url + url)
         if not r.status_code == 200:
             print(r)
-            return pd.DataFrame()
+            return {}
 
         results = r.json().get('results')
-        print(results)
         if results == None:
-            return pd.DataFrame()
+            return {}
 
-        return pd.DataFrame.from_dict(results, orient='index').T
+        results_ = {}
+        for k, v in results.items():
+            if type(v) == dict:
+                v = str(v)
 
+            results_[k] = v
 
+        return results_
 
 if __name__ == '__main__':
-    p = Polygon('../data/sql.db')
+    p = Polygon('../data/polygon.db')
     gd = p.grouped_daily(update=False)
-    p.create_table('ticker_details')
-    path = '../data/ticker_details.csv'
-    # ticker_details_df = pd.read_csv(path)
-    # for ticker in gd['T'].to_list():
-    #     print(ticker)
-    #     # if ticker in ticker_details_df['ticker'].to_list():
-    #     #     print(ticker)
+    table_name = 'ticker_details'
+    p.create_table(table_name)
+    
+    #CREATE DICT FOR COL WITH TYPE AND ADD
+    sector_columns = {}
+    for k, v in _constant.SAMPLE_SECTOR.items():
+        if type(v) == int:
+            v_type = "INTERGER"
+        elif type(v) == float:
+            v_type = "REAL"
+        else:
+            v_type = "TEXT"
 
-    #     df = p.sector(ticker)
-    #     df['updated'] = p.today
-    #     ticker_details_df = pd.concat([ticker_details_df, df])
-    #     ticker_details_df.to_csv(path, index=False)
-    #     time.sleep(15)
+        sector_columns[k] = v_type
+
+    p.add_columns(table_name, sector_columns)
+    p.add_columns(table_name, {'updated': "TEXT"})
+
+    for ticker in gd['T'].to_list():
+        columns = p.get_table_columns(table_name)
+        p.cursor.execute(f"SELECT * FROM {table_name} WHERE {'ticker'} = ?", (ticker,))
+
+        if p.cursor.fetchall():
+            print(ticker)
+            continue
+
+        sector = p.sector(ticker)
+        sector['updated'] = str(p.today)
+        p.add_row(table_name, sector)
+        time.sleep(15)
 
 # df = pd.DataFrame()
 # # df = pd.DataFrame.from_dict(x, orient='index').T
