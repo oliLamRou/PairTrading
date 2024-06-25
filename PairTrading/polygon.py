@@ -8,10 +8,13 @@ import json
 import time
 from datetime import timedelta
 
-class Polygon:
+from PairTrading.database import DataBase
+
+class Polygon(DataBase):
     ALL_SYMBOLS_PATH = '../data/all_symbol.csv'
 
-    def __init__(self):
+    def __init__(self, path):
+        super().__init__(path)
         self.config = configparser.ConfigParser()
         self.config.read('../.config.ini')
 
@@ -84,27 +87,29 @@ class Polygon:
             return pd.DataFrame()
 
         results = r.json().get('results')
+        print(results)
         if results == None:
             return pd.DataFrame()
 
         return pd.DataFrame.from_dict(results, orient='index').T
 
 
+
 if __name__ == '__main__':
-    p = Polygon()
+    p = Polygon('../data/sql.db')
     gd = p.grouped_daily(update=False)
     path = '../data/ticker_details.csv'
-    ticker_details_df = pd.read_csv(path)
-    for ticker in gd['T'].to_list():
-        print(ticker)
-        if ticker in ticker_details_df['ticker'].to_list():
-            print(ticker)
+    # ticker_details_df = pd.read_csv(path)
+    # for ticker in gd['T'].to_list():
+    #     print(ticker)
+    #     # if ticker in ticker_details_df['ticker'].to_list():
+    #     #     print(ticker)
 
-        # df = p.sector(ticker)
-        # df['updated'] = p.today
-        # ticker_details_df = pd.concat([ticker_details_df, df])
-        # ticker_details_df.to_csv(path, index=False)
-        # time.sleep(15)
+    #     df = p.sector(ticker)
+    #     df['updated'] = p.today
+    #     ticker_details_df = pd.concat([ticker_details_df, df])
+    #     ticker_details_df.to_csv(path, index=False)
+    #     time.sleep(15)
 
 # df = pd.DataFrame()
 # # df = pd.DataFrame.from_dict(x, orient='index').T
