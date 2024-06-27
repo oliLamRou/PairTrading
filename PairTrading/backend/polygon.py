@@ -6,15 +6,16 @@ import pandas as pd
 import requests
 
 from PairTrading.backend.database import DataBase
-from PairTrading.constant import _constant
+from PairTrading.src import _constant
+from PairTrading.src.utils import PROJECT_ROOT
 
 class Polygon(DataBase):
-    DB = '../../data/polygon.db'
+    DB = (PROJECT_ROOT / 'data' / 'polygon.db').resolve()
 
     def __init__(self):
         super().__init__(path=self.DB)
         self.config = configparser.ConfigParser()
-        self.config.read('../../.config.ini')
+        self.config.read(_constant.CONFIG)
 
         #API_KEY
         self.key = self.config['polygon']['API_KEY']

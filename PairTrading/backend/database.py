@@ -71,6 +71,4 @@ class DataBase:
         return self.cursor.fetchall()
 
 if __name__ == '__main__':
-    db = DataBase('../data/sql.db')
-    table_name = 'new_table'
-    db.list_tables()
+    pass
