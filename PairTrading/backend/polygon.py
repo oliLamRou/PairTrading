@@ -14,15 +14,16 @@ class Polygon(DataBase):
 
     def __init__(self):
         super().__init__(path=self.DB)
+        
+        #API_KEY
         self.config = configparser.ConfigParser()
         self.config.read(_constant.CONFIG)
-
-        #API_KEY
         self.key = self.config['polygon']['API_KEY']
 
+        #URL
         self.base_url = 'https://api.polygon.io/'
-        self.all_symbols = []
 
+        #Date 
         self.today = pd.Timestamp.now(tz='US/Eastern')
         self._previous_day = None
 
@@ -50,43 +51,41 @@ class Polygon(DataBase):
 
         results = r.json().get('results')
         if results == None:
-            print(f'Empty results for ulr: {url}. Full requests: {r}')
+            print(f'Empty results for url: {url}. Full requests: {r}')
             return {}
 
         return results
 
-    def historical_(self, symbol, results):
-        timespan = 'day'
-        table_name = f'{timespan}_{symbol}'
-        columns = {v[0]: v[1] for v in _constant.HISTORICAL_COLUMNS.values()}
-        
-        self.create_table(table_name)
-        self.clear_table(table_name)
-        self.add_columns(table_name, columns)
+    def result_formatting(self, 
+            row: dict, 
+            columns_type: dict
+        ) -> dict:
 
-        for row in results:
-            results_ = {}
-            for k, v in row.items():
-                column = _constant.HISTORICAL_COLUMNS.get(k)
-                column_name = column[0]
-                column_type = column[1]
-                if column_type == 'INTERGER':
-                    results_[column_name] = int(v)
-                elif column_type == 'REAL':
-                    results_[column_name] = float(v)
-                elif column_type == 'TEXT':
-                    results_[column_name] = str(v)
-                else:
-                    print(f'Column: {k} does exist in HISTORICAL_COLUMNS. It will be skipped.\n')
-                    continue
+        results_ = {}
+        for k, v in row.items():
+            column = columns_type.get(k)
+            if not column:
+                print(f'Column: {k} does exist. It will be skipped.\n')
+                continue
 
-            self.add_row(table_name, results_)
+            column_name = column[0]
+            column_type = column[1]
+            if column_type == 'INTERGER':
+                results_[column_name] = int(v)
+            elif column_type == 'REAL':
+                results_[column_name] = float(v)
+            else:
+                results_[column_name] = str(v)
 
-    def historical(self, 
+        return results_
+
+    def aggregates(self,
             symbol: str,
             n_days: int = 300,
             update: bool = False
         ) -> pd.DataFrame():
+        #NOTE: need to return df
+        #I think we should merge all daily table in 1
 
         end = self.today.strftime('%Y-%m-%d')
         start = (self.today - timedelta(days=n_days)).strftime('%Y-%m-%d')
@@ -104,58 +103,8 @@ class Polygon(DataBase):
         self.add_columns(table_name, columns)
 
         for row in results:
-            results_ = {}
-            for k, v in row.items():
-                column = _constant.HISTORICAL_COLUMNS.get(k)
-                column_name = column[0]
-                column_type = column[1]
-                if column_type == 'INTERGER':
-                    results_[column_name] = int(v)
-                elif column_type == 'REAL':
-                    results_[column_name] = float(v)
-                elif column_type == 'TEXT':
-                    results_[column_name] = str(v)
-                else:
-                    print(f'Column: {k} does exist in HISTORICAL_COLUMNS. It will be skipped.\n')
-                    continue
-
+            self.result_formatting(row, _constant.HISTORICAL_COLUMNS)
             self.add_row(table_name, results_)
-
-    def ticker_details(self,
-            table_name: str = 'ticker_details',
-            update: bool = False
-        ) -> pd.DataFrame():
-
-        grouped_daily_df = self.grouped_daily(update=update)
-        
-        columns = _constant.TICKER_DETAILS_COLUMNS
-        self.create_table(table_name)
-        self.add_columns(table_name, columns)
-        for ticker in grouped_daily_df['symbol'].to_list():
-            self.cursor.execute(f"SELECT * FROM {table_name} WHERE {'ticker'} = ?", (ticker,))
-
-            if self.cursor.fetchall():
-                continue
-            
-            url = f'v3/reference/tickers/{ticker}?apiKey={self.key}'
-            results = self.requests_results(url)
-            
-            results_ = {}
-            for k, v in results.items():
-                column_type = columns.get(k)
-                if column_type == 'INTERGER':
-                    results_[k] = int(v)
-                elif column_type == 'REAL':
-                    results_[k] = float(v)
-                elif column_type == 'TEXT':
-                    results_[k] = str(v)
-                else:
-                    print(f'Column: {k} does exist in TICKER_DETAILS_COLUMNS. It will be skipped.\n')
-                    continue
-
-            print(f'Adding: {" ".join(str(r) for r in results_.values())[:60]} ... ')
-            self.add_row(table_name, results_)
-            time.sleep(15)
 
     def grouped_daily(self, 
             table_name: str = 'grouped_daily',
@@ -164,28 +113,88 @@ class Polygon(DataBase):
 
         if update:
             print("--> Updating: 'grouped_daily'\n")
-            columns = _constant.GROUPED_DAILY_COLUMNS
+            self.create_table(table_name)
+            self.clear_table(table_name)
+            
+            columns = {v[0]: v[1] for v in _constant.GROUPED_DAILY_COLUMNS.values()}
+            self.add_columns(table_name, columns)
 
             url = f'v2/aggs/grouped/locale/us/market/stocks/{self.previous_day}?adjusted=true&apiKey={self.key}'
             results = self.requests_results(url)
-            
-            self.create_table(table_name)
-            self.clear_table(table_name)
-            self.add_columns(table_name, columns)
-
             for result in results:
-                result_ = {}
-                for key,n_key in zip(result.keys(), columns.keys()):
-                    result_[n_key] = result.get(key)
-
+                result_ = self.result_formatting(result, _constant.TICKER_TYPES_COLUMNS)
                 self.add_row(table_name, result_)
 
         return self.get_table(table_name)
 
+    def ticker_types(self,
+            table_name: str = 'ticker_types',
+            asset_class: str = 'stocks',
+            locale: str = 'us',
+            update: bool = False
+        ) -> pd.DataFrame():
+
+        if update:
+            print(f"--> Updating: '{table_name}'\n")
+            self.create_table(table_name)
+            self.clear_table(table_name)
+
+            columns = {v[0]: v[1] for v in _constant.TICKER_TYPES_COLUMNS.values()}
+            self.add_columns(table_name, columns)
+
+            url = f'v3/reference/tickers/types?asset_class={asset_class}&locale={locale}&apiKey={self.key}'
+            results = self.requests_results(url)
+            for result in results:
+                result_ = self.result_formatting(result, _constant.TICKER_TYPES_COLUMNS)
+                self.add_row(table_name, result_)
+
+        return self.get_table(table_name)
+
+    def ticker_details(self,
+            ticker: str,
+            table_name: str = 'ticker_details',
+            update: bool = False
+        ) -> pd.DataFrame():
+        
+        #Prep table & columns
+        self.create_table(table_name)
+        
+        columns = _constant.TICKER_DETAILS_COLUMNS
+        self.add_columns(table_name, columns)
+
+        #Return if already exists
+        self.cursor.execute(f"SELECT * FROM {table_name} WHERE {'ticker'} = ?", (ticker,))
+        if self.cursor.fetchall():
+            df = self.get_table(table_name)
+            return df[df.ticker == ticker]
+        
+        #Requests data & formatting
+        url = f'v3/reference/tickers/{ticker}?apiKey={self.key}'
+        results = self.requests_results(url)
+        results_ = self.result_formatting(results, columns)
+        
+        #Adding
+        print(f'Adding: {" ".join(str(r) for r in results_.values())[:60]} ... ')
+        self.add_row(table_name, results_)
+
+        #Returning result from the table -> this should be a sql request for 1 row instead of the whole table
+        df = self.get_table(table_name)
+        return df[df.ticker == ticker]
+
+    def _download_tickers_details(self):
+        grouped_daily_df = self.get_table('grouped_daily')
+        #NOTE: let's change symbol to ticker
+        for ticker in grouped_daily_df.symbol.to_list():
+            self.cursor.execute(f"SELECT * FROM ticker_details WHERE ticker = ?", (ticker,))
+            if self.cursor.fetchall():
+                print(f'skipping {ticker}')
+                continue
+                
+            self.ticker_details(ticker)
+            time.sleep(15)
+
 if __name__ == '__main__':
     p = Polygon()
-    p.ticker_details()
-    #Ticker details should only do one
-    #Need a update for all those ticker function
-
-
+    p._download_tickers_details()
+    # print(p.get_table('ticker_details'))
+    # p.ticker_details('MARA')
