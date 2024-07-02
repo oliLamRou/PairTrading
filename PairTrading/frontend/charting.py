@@ -69,6 +69,7 @@ class Charting:
 
         layoutElements = [
             html.H6(f'{self.name} stock candlestick chart'),
+            dcc.Markdown(self.name),
             dcc.Checklist(id=f'{self.name}-toggle-bbands', options=[{'label': 'Show Bollinger Bands', 'value': "bbands"}], value=["bbands"]),
             #dcc.Input(id=f'{self.name}-bbands-length', value=20, type="number", step=1), "length",
             #dcc.Input(id=f'{self.name}-bbands-stdDev', value=2, type="number", step=1), "steps",
@@ -132,8 +133,7 @@ class Charting:
     
     def chart_line_callback(self, df, value, name='',):
         #bbands = self.calculate_bollinger_bands(df, 20, 2)
-        df = self._data
-        
+
         figures = [
             go.Scatter(x=self._data[self.dataKeys['Time']], y=self._data[self.dataKeys['Close']], line={"width" : 1})
         ] 
@@ -152,7 +152,7 @@ class Charting:
             xaxis_rangeslider_visible=True,
             #xaxis_rangeslider_yaxis_rangemode="auto"
         )
-
+        print(df)
         return fig
     
     def calculate_bollinger_bands(self, df, len=20, stdDev=2):
@@ -160,18 +160,14 @@ class Charting:
         return df
 
 if __name__ == '__main__':
-    if sys.platform.startswith("win"):
-        dataPath = "D:\\Trading\\Dev\\branch scanner\\PairTrading\\data\\historical\\"
 
-    elif sys.platform == "darwin":
-        dataPath = "/Users/gab/Documents/Trading/data/"
-    
     p = Polygon()
 
     #print(p.list_tables())
     print("AA", p.get_table("day_AA"))
     print("MSTR", p.get_table("day_MSTR"))
     #tickers = ["day_AA", "day_MSTR", "day_AU", "day_CMA", "day_DVN"]
+    
     tickers = ["day_DVN", "day_MSTR"]
 
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -179,7 +175,7 @@ if __name__ == '__main__':
     charts = []
     for t in tickers:
         df = p.get_table(t)
-        chart = Charting(t, "line")
+        chart = Charting(t, "lines")
         chart.data = df
         chart.dataKeys = {
             "Time" : _constant.HISTORICAL_COLUMNS['t'][0], 
