@@ -25,6 +25,14 @@ class DataBase:
         self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
         return self.cursor.fetchall()
 
+    def table_exists(self, table_name):
+        self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+        return self.cursor.fetchone() is not None
+
+    def setup_table(self, table_name: str, columns: dict):
+        self.create_table(table_name)
+        self.add_columns(table_name, columns)
+
     def get_table(self, table_name: str) -> pd.DataFrame():
         return pd.read_sql_query(f"SELECT * FROM {table_name}", self.conn)
 

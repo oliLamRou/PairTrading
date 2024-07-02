@@ -15,7 +15,7 @@ GROUPED_DAILY_COLUMNS = {
     'otc': ['otc', 'INTERGER']
 }
 
-HISTORICAL_COLUMNS = {
+AGGREGATES_COLUMNS = {
     'c': ['close', 'REAL'],
     'h': ['high', 'REAL'],
     'l': ['low', 'REAL'],
