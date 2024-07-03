@@ -1,8 +1,7 @@
-import configparser
 from datetime import timedelta
+import configparser
 
 import pandas as pd
-
 
 from PairTrading.backend.market_data import MarketData
 from PairTrading.src import _constant

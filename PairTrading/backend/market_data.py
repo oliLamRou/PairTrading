@@ -10,6 +10,9 @@ class MarketData:
         #200 good
 
         r = requests.get(self.base_url + url)
+        print(r)
+        print(self.base_url + url)
+
         if not r.status_code == 200:
             print(r)
             raise ValueError(r.status_code)

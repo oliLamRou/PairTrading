@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
-from PairTrading.backend.polygon import Polygon
+from PairTrading.backend.data import Data
 import math
 
-class Scanner(Polygon):
+class Scanner(Data):
     """
     GOAL: scan and filter tickers for potential pair. NO CHART
     """

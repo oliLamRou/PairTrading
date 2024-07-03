@@ -52,20 +52,16 @@ class DataBase:
             CREATE TABLE IF NOT EXISTS {table_name} (id INTEGER PRIMARY KEY)'''
         )
 
-    def add_columns(self,
-            table_name: str, 
-            columns: dict
-        ):
-        
+    def add_columns(self, table_name: str, columns: dict):
         current_columns = self.get_table_columns(table_name)
         for column_name, column_type in columns.items():
             if column_name in current_columns:
                 continue
 
+            print(f'Adding {column_name} of type: {column_type} in table: {table_name}')
             self.cursor.execute(f'''ALTER TABLE {table_name} ADD {column_name} {column_type}''') 
         
         self.conn.commit()
-        self.get_table_columns(table_name)
         
     def add_row(self, table_name: str, row: dict):
         columns = ', '.join(str(key) for key in row.keys())

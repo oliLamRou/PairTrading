@@ -3,7 +3,7 @@ from PairTrading.src.utils import PROJECT_ROOT
 CONFIG = (PROJECT_ROOT / '.config.ini').resolve()
 
 GROUPED_DAILY_COLUMNS = {
-    'T': ['symbol', 'TEXT'], 
+    'T': ['ticker', 'TEXT'], 
     'v': ['volume', 'INTERGER'], 
     'vw': ['volume_weighted', 'REAL'], 
     'o': ['open', 'REAL'], 

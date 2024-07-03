@@ -101,27 +101,6 @@ class Data(DataBase, Polygon):
     #         self.result_formatting(row, _constant.HISTORICAL_COLUMNS)
     #         self.add_row(table_name, results_)
 
-    # def grouped_daily(self, 
-    #         table_name: str = 'grouped_daily',
-    #         update: bool = False
-    #     ) -> pd.DataFrame():
-
-    #     if update:
-    #         print("--> Updating: 'grouped_daily'\n")
-    #         self.create_table(table_name)
-    #         self.clear_table(table_name)
-            
-    #         columns = {v[0]: v[1] for v in _constant.GROUPED_DAILY_COLUMNS.values()}
-    #         self.add_columns(table_name, columns)
-
-    #         url = f'v2/aggs/grouped/locale/us/market/stocks/{self.previous_day}?adjusted=true&apiKey={self.key}'
-    #         results = self.requests_results(url)
-    #         for result in results:
-    #             result_ = self.result_formatting(result, _constant.TICKER_TYPES_COLUMNS)
-    #             self.add_row(table_name, result_)
-
-    #     return self.get_table(table_name)
-
     # def ticker_types(self,
     #         table_name: str = 'ticker_types',
     #         asset_class: str = 'stocks',
@@ -145,6 +124,27 @@ class Data(DataBase, Polygon):
 
     #     return self.get_table(table_name)
 
+    def get_renamed_columns(self, columns: dict) -> dict:
+         return {v[0]: v[1] for v in columns.values()}
+
+    def get_grouped_daily(self, 
+            table_name: str = 'grouped_daily',
+            update: bool = False
+        ) -> pd.DataFrame():
+
+        self.setup_table(
+            table_name, 
+            self.get_renamed_columns(_constant.GROUPED_DAILY_COLUMNS)
+        )
+        if update:
+            print("--> Updating: 'grouped_daily'\n")
+            self.clear_table(table_name) #NOTE: this need to be a insert missing
+            results = self.grouped_daily()
+            for result in results:
+                self.add_row(table_name, result)
+
+        return self.get_table(table_name)
+
     def get_ticker_details(self,
             ticker: str,
             table_name: str = 'ticker_details',
@@ -152,7 +152,10 @@ class Data(DataBase, Polygon):
         ) -> pd.DataFrame():
 
         #Create and add whatever is missing
-        self.setup_table(table_name, _constant.TICKER_DETAILS_COLUMNS)
+        self.setup_table(
+            table_name, 
+            self.get_renamed_columns(_constant.TICKER_DETAILS_COLUMNS)
+        )
 
         if update:
             results = self.ticker_details(ticker)
@@ -164,5 +167,5 @@ class Data(DataBase, Polygon):
 
 if __name__ == '__main__':
     p = Data()
-    df = p.get_ticker_details("SPGI")
-    print(df.T)
+    df = p.get_grouped_daily(update=True)
+    print(df)
