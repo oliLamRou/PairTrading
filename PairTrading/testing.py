@@ -1,24 +1,15 @@
-import configparser
+import pandas as pd
+from PairTrading.backend.data import Data
 
-from PairTrading.src.utils import PROJECT_ROOT
-from PairTrading.src import _constant
+d = Data()
 
+df = d.get_aggregates('AAPL', update=False)
 
-AGGREGATES_COLUMNS = {
-    'c': ['close', 'REAL'],
-    'h': ['high', 'REAL'],
-    'l': ['low', 'REAL'],
-    'n': ['n_transaction', 'INTERGER'],
-    'o': ['open', 'REAL'],
-    't': ['timestamp', 'INTERGER'],
-    'v': ['volume', 'INTERGER'],
-    'vw': ['volume_weighted', 'REAL'],
-    'otc': ['otc', 'INTERGER']
-}
+avg = df[-30:].volume.mean().astype(int)
 
+print(avg)
 
-# B = ?, C = ?
-# print('=?, '.join(AGGREGATES_COLUMNS.keys()) + '=?')
-v = list(AGGREGATES_COLUMNS.keys())
-v.append('d')
-print(tuple(v))
+get_grouped_daily   market_snapshot
+get_ticker_details  ticker_info
+get_ticker_types    
+get_aggregates      market_data

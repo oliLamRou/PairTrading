@@ -22,31 +22,35 @@ class DataBase:
         return self._cursor
 
     #READ
-    def list_tables(self) -> list:
-        self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        return self.cursor.fetchall()
+    def list_tables(self) -> pd.DataFrame():
+        return pd.read_sql_query("SELECT name FROM sqlite_master WHERE type='table'", self.conn)
 
-    def table_exists(self, table_name):
-        self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
-        return self.cursor.fetchone() is not None
+    def has_table(self, table_name) -> bool:
+        query = pd.read_sql_query(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?", 
+            self.conn, 
+            params=(table_name,)
+        )
+        return False if query.empty else True
 
-    def has_value(self, table_name, column_name, value):
-        self.cursor.execute("SELECT EXISTS(SELECT 1 FROM 'ticker_details' WHERE ticker = ?)", ('MSTR',))
-        return True if self.cursor.fetchone()[0] == 1 else False
+    def get_rows(self, table_name, column_name, value) -> pd.DataFrame():
+        return pd.read_sql_query(
+            f"SELECT * FROM {table_name} WHERE {column_name} = ?", 
+            self.conn, 
+            params=(value,)
+        )
 
-    def get_rows(self, table_name, column_name, value):
-        self.cursor.execute(f"SELECT * FROM {table_name} WHERE {column_name} = ?", (value,))
-        return self.cursor.fetchall()
+    def has_value(self, table_name, column_name, value) -> bool:
+        query = self.get_rows(table_name, column_name, value)
+        return False if query.empty else True
 
     def get_table(self, table_name: str) -> pd.DataFrame():
         return pd.read_sql_query(f"SELECT * FROM {table_name}", self.conn)
 
-    def get_table_columns(self, table_name: str) -> list:
-        self.cursor.execute(f'''PRAGMA table_info({table_name})''')
-        columns = [col[1] for col in self.cursor.fetchall()]
-        return columns
+    def get_table_columns(self, table_name: str) -> pd.DataFrame():
+        return pd.read_sql_query(f"PRAGMA table_info({table_name})", self.conn)['name']
 
-    #MODIFY
+    #WRITE
     def setup_table(self, table_name: str, columns: dict):
         self.create_table(table_name)
         self.add_columns(table_name, columns)
@@ -65,7 +69,7 @@ class DataBase:
     def add_columns(self, table_name: str, columns: dict):
         current_columns = self.get_table_columns(table_name)
         for column_name, column_type in columns.items():
-            if column_name in current_columns:
+            if column_name in current_columns.values:
                 continue
 
             print(f'Adding {column_name} of type: {column_type} in table: {table_name}')
@@ -91,9 +95,5 @@ class DataBase:
         self.conn.commit()
 
 if __name__ == '__main__':
-    s = "SELECT EXISTS(SELECT 1 FROM 'ticker_details' WHERE ticker = ?)"
     db = DataBase('../../data/polygon.db')
-    # db._delete_row('ticker_details', 'ticker', 'MSTR')
-    x = db.get_rows('ticker_details', 'ticker', 'MSTR')
-    print(x)
 
