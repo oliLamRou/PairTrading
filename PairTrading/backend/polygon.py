@@ -28,17 +28,17 @@ class Polygon(MarketData):
         """
         if self._previous_day == None:
             url = f'v2/aggs/ticker/AAPL/prev?adjusted=true&apiKey={self.key}'
-            results = self.requests_results(url)
+            results, status_code = self.requests_results(url)
             timestamp = results[0].get('t')
             self._previous_day = pd.Timestamp(timestamp, unit='ms').strftime('%Y-%m-%d')
 
         return self._previous_day
 
-    def aggregates(self, symbol: str, n_days: int = 300, timespan: str = 'day') -> [dict]:
+    def aggregates(self, ticker: str, n_days: int = 300, timespan: str = 'day') -> [dict]:
         end = self.today.strftime('%Y-%m-%d')
         start = (self.today - timedelta(days=n_days)).strftime('%Y-%m-%d')
 
-        url = f'v2/aggs/ticker/{symbol}/range/1/{timespan}/{start}/{end}?adjusted=true&sort=asc&apiKey={self.key}'
+        url = f'v2/aggs/ticker/{ticker}/range/1/{timespan}/{start}/{end}?adjusted=true&sort=asc&apiKey={self.key}'
         return self.requests_and_format(url, _constant.AGGREGATES_COLUMNS)
 
     def grouped_daily(self) -> [dict]:

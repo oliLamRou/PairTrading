@@ -21,6 +21,7 @@ class DataBase:
 
         return self._cursor
 
+    #READ
     def list_tables(self) -> list:
         self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
         return self.cursor.fetchall()
@@ -29,9 +30,13 @@ class DataBase:
         self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
         return self.cursor.fetchone() is not None
 
-    def setup_table(self, table_name: str, columns: dict):
-        self.create_table(table_name)
-        self.add_columns(table_name, columns)
+    def has_value(self, table_name, column_name, value):
+        self.cursor.execute("SELECT EXISTS(SELECT 1 FROM 'ticker_details' WHERE ticker = ?)", ('MSTR',))
+        return True if self.cursor.fetchone()[0] == 1 else False
+
+    def get_rows(self, table_name, column_name, value):
+        self.cursor.execute(f"SELECT * FROM {table_name} WHERE {column_name} = ?", (value,))
+        return self.cursor.fetchall()
 
     def get_table(self, table_name: str) -> pd.DataFrame():
         return pd.read_sql_query(f"SELECT * FROM {table_name}", self.conn)
@@ -40,6 +45,11 @@ class DataBase:
         self.cursor.execute(f'''PRAGMA table_info({table_name})''')
         columns = [col[1] for col in self.cursor.fetchall()]
         return columns
+
+    #MODIFY
+    def setup_table(self, table_name: str, columns: dict):
+        self.create_table(table_name)
+        self.add_columns(table_name, columns)
 
     def _drop_table(self, table_name: str):
         self.cursor.execute(f'DROP TABLE {table_name}')
@@ -59,7 +69,7 @@ class DataBase:
                 continue
 
             print(f'Adding {column_name} of type: {column_type} in table: {table_name}')
-            self.cursor.execute(f'''ALTER TABLE {table_name} ADD {column_name} {column_type}''') 
+            self.cursor.execute(f'''ALTER TABLE {table_name} ADD {column_name} {column_type}''')
         
         self.conn.commit()
         
@@ -70,9 +80,20 @@ class DataBase:
         self.cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})", values)
         self.conn.commit()
 
-    def get_rows(self, table_name, column_name, value):
-        self.cursor.execute(f"SELECT * FROM {table_name} WHERE {column_name} = ?", (value,))
-        return self.cursor.fetchall()
+    def update_row(self, table_name: str, row: dict, column_name: str, column_value):
+        columns = '=?, '.join(row.keys()) + '=?'
+        values = list(row.values())
+        values.append(column_value)
+        self.cursor.execute(f'''UPDATE {table_name} SET {columns} WHERE {column_name} = ? ''', tuple(values))
+
+    def _delete_row(self, table_name: str, column_name: str, column_value):
+        self.cursor.execute(f'''DELETE FROM {table_name} WHERE {column_name} = ? ''', (column_value, ))
+        self.conn.commit()
 
 if __name__ == '__main__':
-    pass
+    s = "SELECT EXISTS(SELECT 1 FROM 'ticker_details' WHERE ticker = ?)"
+    db = DataBase('../../data/polygon.db')
+    # db._delete_row('ticker_details', 'ticker', 'MSTR')
+    x = db.get_rows('ticker_details', 'ticker', 'MSTR')
+    print(x)
+

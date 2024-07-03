@@ -6,23 +6,20 @@ class MarketData:
 
     def requests_results(self, url: str) -> dict:
         #400 bad requests
+        #404 wrong
         #429 too many requests
         #200 good
 
         r = requests.get(self.base_url + url)
-        print(r)
-        print(self.base_url + url)
 
-        if not r.status_code == 200:
-            print(r)
-            raise ValueError(r.status_code)
+        status_code = r.status_code
+        if not status_code == 200:
+            warnings.warn(message=f'Requests code: {status_code}', category=Warning, stacklevel=2)
 
+        #NOTE: .get will probaly not work with other API
         results = r.json().get('results')
-        if results == None:
-            print(f'Empty results for url: {url}. Full requests: {r}')
-            return {}
 
-        return results
+        return results, status_code
 
     def format_results(self,
             row: dict, 
@@ -48,7 +45,10 @@ class MarketData:
         return results_
 
     def requests_and_format(self, url, columns):
-        results = self.requests_results(url)
+        results, status_code = self.requests_results(url)
+        if not status_code == 200:
+            return
+
         if type(results) == list:
             return [self.format_results(result, columns) for result in results]
         else:
