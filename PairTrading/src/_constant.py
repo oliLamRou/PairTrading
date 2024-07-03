@@ -3,7 +3,7 @@ from PairTrading.src.utils import PROJECT_ROOT
 CONFIG = (PROJECT_ROOT / '.config.ini').resolve()
 
 GROUPED_DAILY_COLUMNS = {
-    'T': ['symbol', 'TEXT'], 
+    'T': ['ticker', 'TEXT'], 
     'v': ['volume', 'INTERGER'], 
     'vw': ['volume_weighted', 'REAL'], 
     'o': ['open', 'REAL'], 
@@ -15,7 +15,7 @@ GROUPED_DAILY_COLUMNS = {
     'otc': ['otc', 'INTERGER']
 }
 
-HISTORICAL_COLUMNS = {
+AGGREGATES_COLUMNS = {
     'c': ['close', 'REAL'],
     'h': ['high', 'REAL'],
     'l': ['low', 'REAL'],
