@@ -2,6 +2,22 @@ from PairTrading.src.utils import PROJECT_ROOT
 
 CONFIG = (PROJECT_ROOT / '.config.ini').resolve()
 
+#DB
+MARKET_DATA_COLUMNS = {
+    'ticker': 'TEXT',
+    'timespan': 'TEXT',
+    'close': 'REAL',
+    'high': 'REAL',
+    'low': 'REAL',
+    'n_transaction': 'INTERGER',
+    'open': 'REAL',
+    'timestamp': 'INTERGER',
+    'volume': 'INTERGER',
+    'volume_weighted': 'REAL',
+    'otc': 'INTERGER',
+}
+
+#POLYGON
 GROUPED_DAILY_COLUMNS = {
     'T': ['ticker', 'TEXT'], 
     'v': ['volume', 'INTERGER'], 

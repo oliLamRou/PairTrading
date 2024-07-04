@@ -55,5 +55,4 @@ class Polygon(MarketData):
 
 if __name__ == '__main__':
     p = Polygon()
-    x = p.previous_day
-    print(x)
+    print(p.today)
