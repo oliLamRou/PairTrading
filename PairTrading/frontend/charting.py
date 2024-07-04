@@ -28,7 +28,7 @@ class DashChart:
         self.name = name
         self.showHeader = True
         self.showTitle = False
-        self.dataKeys = {"Time" : "Time", "Open" : "Open", "Close" : "Close", "High" : "High", "Low" : "Low"}
+        self.dataKeys = {"Time" : "timestamp", "Open" : "open", "Close" : "close", "High" : "high", "Low" : "low"}
 
     @property
     def data(self):

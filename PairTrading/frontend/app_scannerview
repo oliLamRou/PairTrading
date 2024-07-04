@@ -1,0 +1,42 @@
+from PairTrading.frontend.charting import DashChart
+from PairTrading.backend.data_wrangler import DataWrangler
+from PairTrading.frontend.data_utils import DataUtils
+from PairTrading.frontend.pair import Pair
+
+from PairTrading.src import _constant
+import pandas as pd
+
+from dash import Dash, html, dcc, Input, Output  # pip install dash
+import dash_bootstrap_components as dbc   # pip install dash-bootstrap-components
+
+dw = DataWrangler()
+
+app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+d = DataUtils()
+
+tickers = dw.market_snapshot().ticker
+charts = []
+
+print(tickers[0])
+
+for t in range(10):
+    df = dw.market_data(tickers[t])
+    chart_compare = DashChart(tickers[t], "compare")
+    chart_compare.data = df
+    #chart_compare.compareData = cdf
+    chart_compare.set_callback_app(app)
+    charts.append(chart_compare)
+
+layout_elements = []
+for c in charts:
+    layout_elements.append(c.get_layout())
+
+print(layout_elements)
+
+app.layout = html.Div(
+    #dbc.Pagination(max_value=10, first_last=True, previous_next=True),
+    layout_elements,
+)
+
+
+app.run_server(debug=True, port=8060)
