@@ -1,7 +1,9 @@
 from PairTrading.backend.polygon import Polygon
 from PairTrading.src import _constant
+from PairTrading.frontend.data_utils import DataUtils
 
-import sys
+from pprint import pprint
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import pandas_ta as ta
@@ -18,12 +20,14 @@ import matplotlib      # pip install matplotlib
 import base64
 from io import BytesIO
 
-
-class Charting:
+class DashChart:
     def __init__(self, name="chart", chartType="line"):
         self._data = None
+        self.compareData = None
         self.chartType = chartType
         self.name = name
+        self.showHeader = True
+        self.showTitle = False
         self.dataKeys = {"Time" : "Time", "Open" : "Open", "Close" : "Close", "High" : "High", "Low" : "Low"}
 
     @property
@@ -39,21 +43,13 @@ class Charting:
 
     def set_callback_app(self, app):
 
-        @app.callback(
-            Output(f'{self.name}-graph', "figure"),
-            Input(f'{self.name}-toggle-bbands', "value"))
-    
-        def appCallbackA(value):
-            fig = chart.chart_line_callback(df, value, self.name)
-            return fig
-        
-        """ if self.chartType == "candlestick":
+        if self.chartType == "candlestick":
             @app.callback(
                 Output(f'{self.name}-graph', "figure"),
                 Input(f'{self.name}-toggle-bbands', "value"))
     
-            def appCallbackA(value):
-                fig = chart.chart_candlestick_callback(df, value, self.name)
+            def appCallback(value):
+                fig = self.chart_candlestick_callback(value)
                 return fig
 
         elif self.chartType == "line":
@@ -61,57 +57,94 @@ class Charting:
                 Output(f'{self.name}-graph', "figure"),
                 Input(f'{self.name}-toggle-bbands', "value"))
     
-            def appCallbackB(value):
-                fig = chart.chart_line_callback(df, value, self.name)
-                return fig """
+            def appCallback(value):
+                fig = self.chart_line_callback(value)
+                return fig
+            
+        elif self.chartType == "compare":
+            @app.callback(
+                Output(f'{self.name}-graph', "figure"),
+                Input(f'{self.name}-toggle-normalize', "value"))
+    
+            def appCallback(normval):
+                fig = self.chart_compare_callback(normval)
+                return fig
                  
     def get_layout(self):
 
-        layoutElements = [
-            html.H6(f'{self.name} stock candlestick chart'),
-            dcc.Markdown(self.name),
-            dcc.Checklist(id=f'{self.name}-toggle-bbands', options=[{'label': 'Show Bollinger Bands', 'value': "bbands"}], value=["bbands"]),
-            #dcc.Input(id=f'{self.name}-bbands-length', value=20, type="number", step=1), "length",
-            #dcc.Input(id=f'{self.name}-bbands-stdDev', value=2, type="number", step=1), "steps",
-            dcc.Graph(id=f'{self.name}-graph')
-        ]
-        return layoutElements
+        cardContent = []
+        if self.showHeader:
+            cardContent = [dbc.CardHeader(html.H6(self.name, className="card-title"))]
 
         if self.chartType == "candlestick":
-            layoutElements += [
-                dcc.Checklist(id=f'{self.name}-toggle-bbands', options=[{'label': 'Show Bollinger Bands', 'value': "bbands"}], value=["bbands"]),
-                #dcc.Input(id=f'{self.name}-bbands-length', value=20, type="number", step=1), "length",
-                #dcc.Input(id=f'{self.name}-bbands-stdDev', value=2, type="number", step=1), "steps",
-                dcc.Graph(id=f'{self.name}-graph')
+            cardContent += [
+                dbc.CardBody([
+                    dbc.Row([
+                        dbc.Col([dcc.Graph(id=f'{self.name}-graph')])
+                    ]),
+
+                    dbc.Row([
+                        dbc.Col([dbc.Checklist(id=f'{self.name}-toggle-bbands', options=[{'label': 'BB', 'value': "bbands"}], value=[""], switch=True)])
+                    ]) 
+                ])
             ]
 
         elif self.chartType == "line":
-            layoutElements += [
-                dcc.Checklist(id=f'{self.name}-toggle-bbands', options=[{'label': 'Show Bollinger Bands', 'value': "bbands"}], value=["bbands"]),
-                #dcc.Input(id=f'{self.name}-bbands-length', value=20, type="number", step=1), "length",
-                #dcc.Input(id=f'{self.name}-bbands-stdDev', value=2, type="number", step=1), "steps",
-                dcc.Graph(id=f'{self.name}-graph')
+            cardContent += [
+                dbc.CardBody([
+                    dbc.Row([
+                        dbc.Col([dcc.Graph(id=f'{self.name}-graph')])
+                    ]),
+
+                    dbc.Row([
+                        dbc.Col([dbc.Checklist(id=f'{self.name}-toggle-bbands', options=[{'label': 'BB', 'value': "bbands"}], value=[""], switch=True)])
+                    ]) 
+                ])
             ]
+            
+        elif self.chartType == "compare":
+            cardContent += [
+                dbc.CardBody([
+                    dbc.Row([
+                        dbc.Col([dcc.Graph(id=f'{self.name}-graph')])
+                    ]),
+
+                    dbc.Row([
+                        dbc.Col([dbc.Checklist(id=f'{self.name}-toggle-normalize', options=[{'label': 'Normalize', 'value': True}], value=[True], switch=True)])
+                    ]) 
+                ])
+            ]
+            
+        
+
+        chartCard = dbc.Card(
+            cardContent
+        )            
+                
+        layoutElements = [
+            chartCard
+        ]
 
         return layoutElements
     
-    def chart_candlestick_callback(self, df, value, name='',):
-        bbands = self.calculate_bollinger_bands(df, 20, 2)
+    def chart_candlestick_callback(self, value):
+        bbands = self.calculate_bollinger_bands(20, 2)
 
         figures = [
                     go.Candlestick(
-                    x=df[self.dataKeys['Time']],
-                    open=df[self.dataKeys['Open']],
-                    high=df[self.dataKeys['High']],
-                    low=df[self.dataKeys['Low']],
-                    close=df[self.dataKeys['Close']])
+                    x=self._data[self.dataKeys['Time']],
+                    open=self._data[self.dataKeys['Open']],
+                    high=self._data[self.dataKeys['High']],
+                    low=self._data[self.dataKeys['Low']],
+                    close=self._data[self.dataKeys['Close']],
+                    showlegend=False)
                 ] 
 
         if "bbands" in value:
                 figures += [
-                            go.Scatter(x=df[self.dataKeys['Time']], y=bbands['upper_band'], line={"width" : 1}),
-                            go.Scatter(x=df[self.dataKeys['Time']], y=bbands['mid'], line={"width" : 1}),
-                            go.Scatter(x=df[self.dataKeys['Time']], y=bbands['lower_band'], line={"width" : 1}) 
+                            go.Scatter(x=self._data[self.dataKeys['Time']], y=bbands['upper_band'], line={"width" : 1},showlegend=False),
+                            go.Scatter(x=self._data[self.dataKeys['Time']], y=bbands['mid'], line={"width" : 1},showlegend=False),
+                            go.Scatter(x=self._data[self.dataKeys['Time']], y=bbands['lower_band'], line={"width" : 1},showlegend=False) 
                     ]  
         
         fig = go.Figure(figures)
@@ -123,7 +156,8 @@ class Charting:
         )
 
         fig.update_layout(
-            title="Mega title",
+            margin=dict(l=2, r=2, t=2, b=2),
+            #title="Mega title",
             #annotations = [dict(x="2016-10-10", y=0.2, xref='x', yref='paper', showarrow=True, text="Sell here")],
             xaxis_rangeslider_visible=True,
             xaxis_rangeslider_yaxis_rangemode="auto"
@@ -131,52 +165,88 @@ class Charting:
 
         return fig
     
-    def chart_line_callback(self, df, value, name='',):
-        #bbands = self.calculate_bollinger_bands(df, 20, 2)
+    def chart_line_callback(self, value):
 
         figures = [
-            go.Scatter(x=self._data[self.dataKeys['Time']], y=self._data[self.dataKeys['Close']], line={"width" : 1})
+            go.Scatter(x=self._data[self.dataKeys['Time']], y=self._data[self.dataKeys['Close']], line_shape='linear', line={"width" : 2})
         ] 
 
         fig = go.Figure(figures)
 
+        fig.update_yaxes(showgrid=True, zeroline=False, showticklabels=True, 
+                 showspikes=True, spikemode='across', spikesnap='data', showline=False, spikedash='dash', spikethickness=1, spikecolor="grey", anchor="free")
+
+        fig.update_xaxes(showgrid=True, zeroline=False, rangeslider_visible=True, showticklabels=False,
+                 showspikes=True, spikemode='across', spikesnap='cursor', showline=False, spikedash='dash', spikethickness=1, spikecolor="grey")
+
+        fig.update_layout(
+            margin=dict(l=2, r=2, t=2, b=2),
+            #hoverdistance=0,
+            #title=self.name,
+            #annotations = [dict(x="2016-10-10", y=0.2, xref='x', yref='paper', showarrow=True, text="Sell here")],
+            xaxis_rangeslider_visible=True,
+            #xaxis_rangeslider_yaxis_rangemode="auto"
+        )
+
+        return fig
+    
+    def chart_compare_callback(self, normval):
+        dfA = self._data
+        dfB = self.compareData
+        
+        d = DataUtils()
+
+        if normval:
+            dfA = d.normalize_minmax(self._data, self.dataKeys['Close'])
+            dfB = d.normalize_minmax(self.compareData, self.dataKeys['Close'])
+            
+        figures = [
+            go.Scatter(x=self._data[self.dataKeys['Time']], y=dfA[self.dataKeys['Close']], line={"width" : 1}, name="A"),
+            go.Scatter(x=self.compareData[self.dataKeys['Time']], y=dfB[self.dataKeys['Close']], line={"width" : 1},name="B"),
+        ]
+
+        fig = go.Figure(figures)
+
         fig.update_yaxes(
-            #anchor="free",
+            anchor="free",
             automargin=True,
             autorange=True
         )
 
         fig.update_layout(
-            title=name,
+            margin=dict(l=2, r=2, t=2, b=2),
+            #title=self.name,
             #annotations = [dict(x="2016-10-10", y=0.2, xref='x', yref='paper', showarrow=True, text="Sell here")],
             xaxis_rangeslider_visible=True,
             #xaxis_rangeslider_yaxis_rangemode="auto"
         )
-        print(df)
+
         return fig
     
-    def calculate_bollinger_bands(self, df, len=20, stdDev=2):
-        df[['lower_band', 'mid', 'upper_band']] = ta.bbands(df[self.dataKeys['Close']], length=len, std=stdDev).iloc[:, :3]
+    def calculate_bollinger_bands(self, len=20, stdDev=2):
+        df = pd.DataFrame()
+        df[['lower_band', 'mid', 'upper_band']] = ta.bbands(self._data[self.dataKeys['Close']], length=len, std=stdDev).iloc[:, :3]
         return df
 
 if __name__ == '__main__':
 
     p = Polygon()
-
     #print(p.list_tables())
-    print("AA", p.get_table("day_AA"))
-    print("MSTR", p.get_table("day_MSTR"))
-    #tickers = ["day_AA", "day_MSTR", "day_AU", "day_CMA", "day_DVN"]
+    #tk = p.get_table("ticker_details")
+    #print(p.get_table("ticker_details").columns)
+    #print( tk[tk.ticker=="AAPL"].T )
+    #print(p.get_table("ticker_details"))
     
-    tickers = ["day_DVN", "day_MSTR"]
+    tickers = ["day_AA", "day_MSTR", "day_AU", "day_CMA", "day_DVN", "day_GCT", "day_AZEK", "day_BTI", "day_CFLT"]
 
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
     charts = []
     for t in tickers:
         df = p.get_table(t)
-        chart = Charting(t, "lines")
+        chart = DashChart(t, "compare")
         chart.data = df
+        chart.compareData = df
         chart.dataKeys = {
             "Time" : _constant.HISTORICAL_COLUMNS['t'][0], 
             "Open" : _constant.HISTORICAL_COLUMNS['o'][0],
@@ -189,12 +259,37 @@ if __name__ == '__main__':
         charts.append(chart)
 
     layout_objects = []
-    for c in charts:
-        #layout_objects += c.chart_candlestick()
-        layout_objects += c.get_layout()
+
+    row1 = html.Tr([
+        html.Td(charts[0].get_layout()), 
+        html.Td(charts[1].get_layout()),
+        html.Td("")
+    ])
+    row2 = html.Tr([
+        html.Td(charts[2].get_layout()), 
+        html.Td(charts[3].get_layout()),
+        html.Td("")
+    ])
+    row3 = html.Tr([
+        html.Td(charts[4].get_layout()), 
+        html.Td(charts[5].get_layout()),
+        html.Td("")
+    ])
+    row4 = html.Tr([
+        html.Td(charts[6].get_layout()), 
+        html.Td(charts[7].get_layout()),
+        html.Td("")
+    ])
+    row5 = html.Tr([
+        html.Td(charts[8].get_layout())
+    ])
+    
+    table_body = [html.Tbody([row1, row2, row3, row4, row5])]
+    table = dbc.Table(table_body, borderless=True, striped=False)
 
     app.layout = html.Div(
-        layout_objects,
+        #layout_objects,
+        table,
     )
 
     app.run_server(debug=True)
