@@ -17,6 +17,12 @@ MARKET_DATA_COLUMNS = {
     'otc': 'INTERGER',
 }
 
+SIC_CODE_COLUMNS = {
+    'sic_code': 'INTERGER',
+    'office': 'TEXT',
+    'industry_title': 'TEXT' 
+}
+
 #POLYGON
 GROUPED_DAILY_COLUMNS = {
     'T': ['ticker', 'TEXT'], 

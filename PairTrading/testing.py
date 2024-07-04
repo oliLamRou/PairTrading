@@ -1,15 +1,7 @@
+import time
 import pandas as pd
-from PairTrading.backend.data import Data
+import numpy as np
+from PairTrading.backend.data_wrangler import DataWrangler
+import math
+import matplotlib.pyplot as plt
 
-d = Data()
-
-df = d.get_aggregates('AAPL', update=False)
-
-avg = df[-30:].volume.mean().astype(int)
-
-print(avg)
-
-get_grouped_daily   market_snapshot
-get_ticker_details  ticker_info
-get_ticker_types    
-get_aggregates      market_data

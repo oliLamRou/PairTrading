@@ -38,8 +38,9 @@ class Scanner(DataWrangler):
         df = self.filtered_tickers
         for ticker in df.ticker:
             print(f'/// Doing {ticker}')
-            df = self.ticker_info(ticker)
-            time.sleep(15)
+            if not self._DataWrangler__polygon_db.has_value('ticker_details', 'ticker', ticker):
+                df = self.ticker_info(ticker)
+                time.sleep(15)
 
             df = self.market_data(ticker)
             if df.empty:
@@ -49,5 +50,3 @@ class Scanner(DataWrangler):
 if __name__ == '__main__':
     s = Scanner()
     s.update_db()
-    # print(s.get_table('ticker_details'))
-    # s._delete_row('ticker_details', 'ticker', 'MSTR')
