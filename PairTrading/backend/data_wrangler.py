@@ -41,6 +41,8 @@ class DataWrangler(DataBase, Polygon):
             for result in results:
                 self.__polygon_db.add_row(table_name, result)
 
+            self.__polygon_db._commit
+
         return self.__polygon_db.get_table(table_name)
 
     def market_snapshot(self, 
@@ -60,6 +62,8 @@ class DataWrangler(DataBase, Polygon):
             for result in results:
                 self.__polygon_db.add_row(table_name, result)
 
+            self.__polygon_db._commit
+
         return self.__polygon_db.get_table(table_name)
 
     def ticker_info(self,
@@ -76,12 +80,14 @@ class DataWrangler(DataBase, Polygon):
 
         if not self.__polygon_db.has_value(table_name, 'ticker', ticker):
             results = self.ticker_details(ticker)
-            print(f'Adding: {" ".join(str(r) for r in results.values())[:60]} ...\n')
+            print(f'{table_name} --> Adding: {" ".join(str(r) for r in results.values())[:60]} ...\n')
             self.__polygon_db.add_row(table_name, results)
+            self.__polygon_db._commit
         elif update:
             results = self.ticker_details(ticker)
-            print(f'Updating: {" ".join(str(r) for r in results.values())[:60]} ...\n')
+            print(f'{table_name} --> Updating: {" ".join(str(r) for r in results.values())[:60]} ...\n')
             self.__polygon_db.update_row(table_name, results, 'ticker', ticker)
+            self.__polygon_db._commit
 
         return self.__polygon_db.get_rows(table_name, 'ticker', ticker)
 
@@ -94,21 +100,28 @@ class DataWrangler(DataBase, Polygon):
         #NOTE: need to return df
         #I think we should merge all daily table in 1
 
-        table_name = f"{timespan}_{ticker.replace('.', '_')}"
+        table_name = 'market_data'
         self.__polygon_db.setup_table(
             table_name,
-            self._renamed_columns(_constant.AGGREGATES_COLUMNS)
+            _constant.MARKET_DATA_COLUMNS
         )
 
         if update:
-            self.__polygon_db.clear_table(table_name)
+            self.__polygon_db._delete_rows(table_name, 'ticker', ticker)
             results = self.aggregates(ticker)
-            print(f"--> Clearing and downloading: {table_name}\n")
+            print(f"{table_name} --> Clearing and downloading rows for {ticker}")
             for result in results:
+                result['ticker'] = ticker
+                result['timespan'] = 'd'
                 self.__polygon_db.add_row(table_name, result)
 
-        return self.__polygon_db.get_table(table_name)
+            print(f'Last row: {result}\n')
+            self.__polygon_db._commit
+
+        df = self.__polygon_db.get_table(table_name)
+        return df[(df.ticker == ticker) & (df.timespan == 'd')]
 
 if __name__ == '__main__':
     p = DataWrangler()
-    p.market_data('PBR.A')
+    df = p.market_data('MSTR', update=True)
+    print(df)
