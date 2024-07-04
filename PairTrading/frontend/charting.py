@@ -55,7 +55,8 @@ class DashChart:
         elif self.chartType == "line":
             @app.callback(
                 Output(f'{self.name}-graph', "figure"),
-                Input(f'{self.name}-toggle-bbands', "value"))
+                Input(f'{self.name}-toggle-bbands', "value"),
+            )
     
             def appCallback(value):
                 fig = self.chart_line_callback(value)
@@ -64,10 +65,13 @@ class DashChart:
         elif self.chartType == "compare":
             @app.callback(
                 Output(f'{self.name}-graph', "figure"),
-                Input(f'{self.name}-toggle-normalize', "value"))
+                Input(f'{self.name}-toggle-normalize', "value"),
+                Input(f'{self.name}-scale', "value"),
+                Input(f'{self.name}-offset', "value"),
+            )
     
-            def appCallback(normval):
-                fig = self.chart_compare_callback(normval)
+            def appCallback(normalize, scale, offset):
+                fig = self.chart_compare_callback(normalize, scale, offset)
                 return fig
                  
     def get_layout(self):
@@ -110,7 +114,15 @@ class DashChart:
                     ]),
 
                     dbc.Row([
-                        dbc.Col([dbc.Checklist(id=f'{self.name}-toggle-normalize', options=[{'label': 'Normalize', 'value': True}], value=[True], switch=True)])
+                        dbc.Col([
+                            dbc.Checklist(id=f'{self.name}-toggle-normalize', options=[{'label': 'Normalize', 'value': True}], value=[True], switch=True),
+                            #dcc.Slider(id=f'{self.name}-scale', min=-10, max=10, value=1),
+                            #dcc.Slider(id=f'{self.name}-offset', min=-10, max=10, value=0)
+                            "Scale",
+                            dcc.Input(id=f'{self.name}-scale', value=1, type="number", step=0.001),
+                            "Offset",
+                            dcc.Input(id=f'{self.name}-offset', value=0, type="number", step=0.001),
+                        ])
                     ]) 
                 ])
             ]
@@ -190,16 +202,18 @@ class DashChart:
 
         return fig
     
-    def chart_compare_callback(self, normval):
+    def chart_compare_callback(self, normalize, scale, offset):
         dfA = self._data
         dfB = self.compareData
         
         d = DataUtils()
 
-        if normval:
+        if normalize:
             dfA = d.normalize_minmax(self._data, self.dataKeys['Close'])
             dfB = d.normalize_minmax(self.compareData, self.dataKeys['Close'])
             
+        dfB[self.dataKeys['Close']] = dfB[self.dataKeys['Close']] * scale + offset
+
         figures = [
             go.Scatter(x=self._data[self.dataKeys['Time']], y=dfA[self.dataKeys['Close']], line={"width" : 1}, name="A"),
             go.Scatter(x=self.compareData[self.dataKeys['Time']], y=dfB[self.dataKeys['Close']], line={"width" : 1},name="B"),

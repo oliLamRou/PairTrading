@@ -1,7 +1,21 @@
-from PairTrading.backend.polygon import Polygon
+from PairTrading.backend.database import DataBase
+from PairTrading.backend.data_wrangler import DataWrangler
+from PairTrading.src import _constant
+from PairTrading.src.utils import PROJECT_ROOT
+import pandas as pd
 
-p = Polygon()
-df = p.get_table('day_AA')
+polygon_db_path = (PROJECT_ROOT / 'data' / 'polygon.db').resolve()
+db = DataBase(path = polygon_db_path)
+df = pd.DataFrame()
+#df.items
+df = db.list_tables()
+#print(df)
+
+tickers = []
 print(df)
-p.ticker_details("AAPL")
-#print(p.list_tables())
+print(tickers)
+
+#dw = DataWrangler()
+#df = dw.market_data("AA")
+#info = dw.ticker_info("AA")
+

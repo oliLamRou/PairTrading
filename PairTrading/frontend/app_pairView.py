@@ -1,5 +1,5 @@
 from PairTrading.frontend.charting import DashChart
-from PairTrading.backend.polygon import Polygon
+from PairTrading.backend.data_wrangler import DataWrangler
 from PairTrading.frontend.data_utils import DataUtils
 from PairTrading.frontend.pair import Pair
 
@@ -9,24 +9,24 @@ import pandas as pd
 from dash import Dash, html, dcc, Input, Output  # pip install dash
 import dash_bootstrap_components as dbc   # pip install dash-bootstrap-components
 
-p = Polygon()
+dw = DataWrangler()
 dataKeys = {
-    "Time" : _constant.HISTORICAL_COLUMNS['t'][0], 
-    "Open" : _constant.HISTORICAL_COLUMNS['o'][0],
-    "Close" : _constant.HISTORICAL_COLUMNS['c'][0], 
-    "High" : _constant.HISTORICAL_COLUMNS['h'][0], 
-    "Low" : _constant.HISTORICAL_COLUMNS['l'][0]
+    "Time" : _constant.AGGREGATES_COLUMNS['t'][0], 
+    "Open" : _constant.AGGREGATES_COLUMNS['o'][0],
+    "Close" : _constant.AGGREGATES_COLUMNS['c'][0], 
+    "High" : _constant.AGGREGATES_COLUMNS['h'][0], 
+    "Low" : _constant.AGGREGATES_COLUMNS['l'][0]
 }
 
 #tickers = ["day_AA", "day_MSTR", "day_AU", "day_CMA", "day_DVN", "day_GCT", "day_AZEK", "day_BTI", "day_CFLT"]
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 d = DataUtils()
-pair = Pair(["AA", "AU"])
-pair.calculate_order()
+""" pair = Pair(["AA", "AU"])
+pair.calculate_order() """
 
-df = p.get_table("day_AA")
-cdf = p.get_table("day_AU")
+df = dw.market_data("AA")
+cdf = dw.market_data("AU")
 
 chart_compare = DashChart("A/B Compare", "compare")
 chart_compare.data = df
@@ -89,5 +89,3 @@ app.layout = html.Div(
     layoutElements,
 )
 app.run_server(debug=True, port=8060)
-
-print("DDDD")
