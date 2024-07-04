@@ -16,7 +16,7 @@ class DataWrangler(DataBase, Polygon):
     polygon_db_path = (PROJECT_ROOT / 'data' / 'polygon.db').resolve()
 
     def __init__(self):
-        super().__init__(self)
+        Polygon.__init__(self)
         self.__polygon_db = DataBase(path = self.polygon_db_path)
         
     def _renamed_columns(self, columns: dict) -> dict:
@@ -94,7 +94,7 @@ class DataWrangler(DataBase, Polygon):
         #NOTE: need to return df
         #I think we should merge all daily table in 1
 
-        table_name = f'{timespan}_{ticker}'
+        table_name = f"{timespan}_{ticker.replace('.', '_')}"
         self.__polygon_db.setup_table(
             table_name,
             self._renamed_columns(_constant.AGGREGATES_COLUMNS)
@@ -111,4 +111,4 @@ class DataWrangler(DataBase, Polygon):
 
 if __name__ == '__main__':
     p = DataWrangler()
-    print(p.market_data('MSTR'))
+    p.market_data('PBR.A')
