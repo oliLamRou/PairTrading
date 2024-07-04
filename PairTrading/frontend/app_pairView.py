@@ -89,3 +89,5 @@ app.layout = html.Div(
     layoutElements,
 )
 app.run_server(debug=True, port=8060)
+
+print("DDDD")
