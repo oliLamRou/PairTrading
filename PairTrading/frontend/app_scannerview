@@ -15,23 +15,53 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 d = DataUtils()
 
 tickers = dw.market_snapshot().ticker
+
 charts = []
+layout_elements= []
 
 print(tickers[0])
 
-for t in range(10):
-    df = dw.market_data(tickers[t])
-    chart_compare = DashChart(tickers[t], "compare")
+i = 0
+for t in range(50):
+    print(i)
+    df = dw.market_data(tickers[t], n_days=1)
+    if df.empty:
+        continue
+
+    """ chart_compare = DashChart(tickers[t], "compare")
     chart_compare.data = df
-    #chart_compare.compareData = cdf
+    chart_compare.compareData = df
     chart_compare.set_callback_app(app)
-    charts.append(chart_compare)
 
-layout_elements = []
-for c in charts:
-    layout_elements.append(c.get_layout())
+    pairViewCard = [
+        dbc.CardHeader(html.H3("Pair A / B", className="card-title")),
+        dbc.CardBody([
+            dbc.Row([
+                #charts
+                dbc.Col([
+                    dbc.Row(dbc.Col("pair price")),
+                    dbc.Row([
+                        dbc.Col(chart_compare.get_layout(),width=6),
+                        dbc.Col("chart_ratio.get_layout()",width=6),
+                    ])
+                ], width="8"),                
+            ])
+        ])
+    ] """
 
-print(layout_elements)
+    """ chartCard = dbc.Card(
+        pairViewCard
+    )  
+    
+    layout_elements.append(chartCard) """
+
+    i = i+1
+    if i >= 20:
+        break
+
+    
+
+    
 
 app.layout = html.Div(
     #dbc.Pagination(max_value=10, first_last=True, previous_next=True),
