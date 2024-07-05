@@ -30,6 +30,9 @@ class DataUtils():
         ddf = df.copy()
         ddf[column] = (df[column] - df[column].min()) / (df[column].max() - df[column].min())
         return ddf
+    
+    def get_valid_tickers():
+        return ""
         
 if __name__ == '__main__':
     d = DataUtils()

@@ -13,6 +13,7 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 dw = DataWrangler()
 df = dw.market_data("AA")
+print(df)
 
 chart1 = DashChart("AA", "candlestick")
 chart1.data = df
@@ -22,7 +23,6 @@ df = dw.market_data("AU")
 chart2 = DashChart("AU", "line")
 chart2.data = df
 chart2.set_callback_app(app)
-
 
 def out_page1():
     ChartCard = [
@@ -55,7 +55,7 @@ def out_page2():
         ChartCard
     )  
     
-    return [chartCard, out_page1()]
+    return chartCard, out_page1()
 
 app.layout = html.Div([
     #dcc.Input(id='pagination', value=1, type="number", step=1),
