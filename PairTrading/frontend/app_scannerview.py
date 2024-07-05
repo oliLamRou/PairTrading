@@ -15,7 +15,6 @@ app.title="Scanner Vue"
 d = DataUtils()
 dw = DataWrangler()
 df = dw._DataWrangler__polygon_db.get_table('market_data')
-#scanner = Scanner()
 
 #Scanner settings
 sic_df = dw.sic_code()
@@ -41,14 +40,12 @@ scanner_settings = html.Div([
     ])
 ])
 
-
 #Charts page content
 charts = []
 for i in range(200):
     chart = DashChart(f"temp{i}", "line")
     chart.set_callback_app(app)
     charts.append(chart)
-
 
 def get_chart_page(minprice, maxprice, sector):
     chart_counter = 0
@@ -95,51 +92,10 @@ def get_chart_page(minprice, maxprice, sector):
 
     return layout_elements
 
-
-""" # OLD CHARTS PRE SCANNER
-
-tickers = dw.market_snapshot().ticker
-
-def get_chart_page(value):
-    chart_counter = 0
-    layout_elements = []
-    i = 0
-
-    max_tickers = 15
-
-    for t in tickers:
-        df_ = df[df.ticker == t]
-        if df_.empty or t.find(".") >= 0:
-            continue
-
-        i += 1
-        if i > max_tickers:
-            break
-    
-        chart_compare = charts[chart_counter]
-        chart_counter += 1
-        chart_compare.data = df_
-
-        ChartCard = [
-            dbc.CardBody([
-                dbc.Row([
-                    dbc.Col(chart_compare.get_layout(),width=6),
-                ])
-            ])                
-        ]
-
-        chartCard = dbc.Card(
-            ChartCard
-        )  
-        
-        layout_elements.append(chartCard)
-
-    return layout_elements """ 
-
-
 app.layout = html.Div([
     #dcc.Input(id='pagination', value=1, type="number", step=1),
     scanner_settings,
+    html.Div(id="result-content"),
     #dbc.Pagination(id="pagination", max_value=100, first_last=False, fully_expanded=False, previous_next=False),
     html.Div(id="page-content")
 ])
