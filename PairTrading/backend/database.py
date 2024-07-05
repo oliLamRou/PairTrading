@@ -99,21 +99,6 @@ if __name__ == '__main__':
     from PairTrading.src import _constant
     db = DataBase('../../data/polygon.db')
 
-    # table_name = 'market_data'
-    # print(db.get_table('market_data'))
-
-
-    # df = pd.read_csv('../../data/sic_code.csv')
-    # table_name = 'sic_code'
-    # db._drop_table(table_name)
-    # db.setup_table(table_name, _constant.SIC_CODE_COLUMNS)
-    # print(db.list_tables())
-    # for i, row in df.iterrows():
-    #     print(row.to_dict())
-    #     db.add_row(table_name, row.to_dict())
-
-    # db._commit
-
-    # print(db.get_table(table_name))
+    print(db.get_table('sic_code')['office'].unique())
 
 
