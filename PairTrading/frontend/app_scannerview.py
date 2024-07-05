@@ -13,9 +13,9 @@ app.config.suppress_callback_exceptions=True
 app.title="Scanner Vue"
 
 d = DataUtils()
-scanner = Scanner()
 dw = DataWrangler()
 df = dw._DataWrangler__polygon_db.get_table('market_data')
+#scanner = Scanner()
 
 #Scanner settings
 sic_df = dw.sic_code()
@@ -55,9 +55,6 @@ def get_chart_page(minprice, maxprice, sector):
     layout_elements = []
 
     scanner = Scanner()
-    #dw = DataWrangler()
-    #df = dw._DataWrangler__polygon_db.get_table('market_data')
-
     scanner.min_price = minprice
     scanner.max_price = maxprice
     scanner.min_vol = 0
@@ -78,6 +75,7 @@ def get_chart_page(minprice, maxprice, sector):
             break
     
         chart_compare = charts[chart_counter]
+        chart_compare.label = t
         chart_counter += 1
         chart_compare.data = df_
 

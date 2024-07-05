@@ -26,6 +26,7 @@ class DashChart:
         self.compareData = None
         self.chartType = chartType
         self.name = name
+        self.label = "Label 1"
         self.showHeader = True
         self.showTitle = False
         self.dataKeys = {"Time" : "timestamp", "Open" : "open", "Close" : "close", "High" : "high", "Low" : "low"}
@@ -78,7 +79,7 @@ class DashChart:
 
         cardContent = []
         if self.showHeader:
-            cardContent = [dbc.CardHeader(html.H6(self.name, className="card-title"))]
+            cardContent = [dbc.CardHeader(html.H6(self.label, className="card-title"))]
 
         if self.chartType == "candlestick":
             cardContent += [
