@@ -45,22 +45,8 @@ class DataWrangler(DataBase, Polygon):
 
         return self.__polygon_db.get_table(table_name)
     
-    #Sector
-    def _ticker_by_sic(self, sic: str, sic_type) -> list:
-        sic_code_df = self.__polygon_db.get_table('sic_code')
-        codes = sic_code_df[sic_code_df[sic_type] == sic]['sic_code']
-        
-        ticker_details_df = self.__polygon_db.get_table('ticker_details')
-        return ticker_details_df[
-                (ticker_details_df.sic_code >= codes.min()) & 
-                (ticker_details_df.sic_code <= codes.max())
-            ].ticker.to_list()
-
-    def ticker_by_office(self, sic: str) -> list:
-        return self._ticker_by_sic(sic, 'office')
-
-    def ticker_by_industry(self, sic: str) -> list:
-        return self._ticker_by_sic(sic, 'industry_title')
+    def sic_code(self):
+        return self.__polygon_db.get_table('sic_code')
 
     #Market
     def market_snapshot(self, 

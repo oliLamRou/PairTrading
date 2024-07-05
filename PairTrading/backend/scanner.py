@@ -31,11 +31,35 @@ class Scanner(DataWrangler):
 
         return self._filtered_tickers
 
+    #Sector
+    def _ticker_by_sic(self, sic: str, sic_type) -> list:
+        sic_code_df = self.sic_code()
+        codes = sic_code_df[sic_code_df[sic_type] == sic]['sic_code']
+        
+        ticker_details_df = self.__polygon_db.get_table('ticker_details')
+        return ticker_details_df[
+                (ticker_details_df.sic_code >= codes.min()) & 
+                (ticker_details_df.sic_code <= codes.max())
+            ].ticker.to_list()
+
+    def ticker_by_office(self, sic: str) -> list:
+        return self._ticker_by_sic(sic, 'office')
+
+    def ticker_by_industry(self, sic: str) -> list:
+        return self._ticker_by_sic(sic, 'industry_title')
+
+    def filter(self):
+        pass
+        #sector
+        #price
+        #avg_vol
+
     def update_db(self):
         self.min_price = 10
         self.max_price = 50
         self.min_vol = 1000000
         df = self.filtered_tickers
+        print(len(df.ticker))
         for ticker in df.ticker:
             print(f'/// Doing {ticker}')
             if not self._DataWrangler__polygon_db.has_value('ticker_details', 'ticker', ticker):
