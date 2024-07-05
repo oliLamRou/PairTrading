@@ -1,21 +1,19 @@
-import copy
 from PairTrading.frontend.charting import DashChart
 from PairTrading.backend.data_wrangler import DataWrangler
 from PairTrading.frontend.data_utils import DataUtils
 from PairTrading.frontend.pair import Pair
-
-from PairTrading.src import _constant
 import pandas as pd
 
 from dash import Dash, html, dcc, Input, Output
 import dash_bootstrap_components as dbc
+
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.config.suppress_callback_exceptions=True
-app.title="ScannerVue"
+app.title="Scanner Vue"
 
 d = DataUtils()
-charts = []
 
+charts = []
 for i in range(200):
     chart = DashChart(f"temp{i}", "line")
     chart.set_callback_app(app)
@@ -29,7 +27,8 @@ def get_chart_page(value):
     chart_counter = 0
     layout_elements = []
     i = 0
-    max_tickers = 25
+
+    max_tickers = 15
 
     for t in tickers:
         df_ = df[df.ticker == t]
