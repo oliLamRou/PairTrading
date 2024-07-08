@@ -26,7 +26,7 @@ class Scanner(DataWrangler):
 
         #Market Data
         self.avg_length = 30
-        self.avg_vol = 5000000
+        self.avg_vol = 10000000
 
         #Pair
         self.avg_length_for_ratio = 90
