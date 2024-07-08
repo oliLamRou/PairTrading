@@ -24,6 +24,8 @@ sector_list = dw.sic_code()['office'].sort_values().unique()
 sector_dropdown = [{"label": "All", "value": 1 }]
 industry_dropdown = sector_dropdown
 
+results = 0
+
 for i, s in enumerate(sector_list):
     sector_dropdown.append({"label": s, "value": i+2})
 
@@ -47,11 +49,14 @@ for i in range(200):
     chart.set_callback_app(app)
     charts.append(chart)
 
+### si je cree le scanner ici au lieu de ligne 59
+scanner = Scanner()
+
 def get_chart_page(minprice, maxprice, sector):
     chart_counter = 0
     layout_elements = []
 
-    scanner = Scanner()
+    #scanner = Scanner()
     scanner.min_price = minprice
     scanner.max_price = maxprice
     scanner.min_vol = 0
@@ -110,7 +115,7 @@ app.layout = html.Div([
     ],
 )
 
-def change_page(minprice, maxprice, sector):
+def apply_filter_callback(minprice, maxprice, sector):
     if minprice and maxprice and sector:
         print(sector_dropdown[int(sector)-1]["label"])
         return get_chart_page(minprice, maxprice, sector_dropdown[int(sector)-1]["label"])
