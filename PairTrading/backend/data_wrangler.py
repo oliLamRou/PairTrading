@@ -15,6 +15,7 @@ from PairTrading.src.utils import PROJECT_ROOT
 class DataWrangler(DataBase, Polygon):
     POLYGON_DB = (PROJECT_ROOT / 'data' / 'polygon.db').resolve()
     TICKER_INFO_TABLE_NAME = 'ticker_details'
+    MARKET_DATA_TABLE_NAME = 'market_data'
 
     def __init__(self):
         Polygon.__init__(self)
@@ -104,6 +105,9 @@ class DataWrangler(DataBase, Polygon):
 
         return self.__polygon_db.get_rows(self.TICKER_INFO_TABLE_NAME, 'ticker', ticker)
 
+    def all_market_data(self) -> pd.DataFrame:
+        return self.__polygon_db.get_table(self.MARKET_DATA_TABLE_NAME)
+
     def market_data(self,
             ticker: str,
             timespan: str = 'day',
@@ -112,7 +116,7 @@ class DataWrangler(DataBase, Polygon):
         ) -> pd.DataFrame():
         #NOTE: ticker has a list. [] = all, [ticker, ...]
 
-        table_name = 'market_data'
+        table_name = self.MARKET_DATA_TABLE_NAME
         self.__polygon_db.setup_table(
             table_name,
             _constant.MARKET_DATA_COLUMNS
@@ -134,6 +138,45 @@ class DataWrangler(DataBase, Polygon):
         #NOTE: return from a list of ticker
         return df[(df.ticker == ticker) & (df.timespan == 'd')]
 
+    def _normalize(self, column: str):
+        def normalize_it(column):
+            min_val = column.min()
+            max_val = column.max()
+            return column.apply(
+                lambda x: (x - min_val) / (max_val - min_val)
+            )        
+        #NOTE: will need to bake normalized feature
+        new_col = f'{column}_'
+        self.__polygon_db.add_columns('market_data', {new_col: 'REAL'})
+        all_df = self.all_market_data()
+        for ticker in all_df['ticker'].unique():
+            df = all_df[all_df['ticker'] == ticker].copy()
+            df[new_col] = normalize_it(df.close)
+            for i, row in df.iterrows():
+                if self.__polygon_db.get_rows('market_data', 'id', row['id']).empty:
+                    print(i, row)
+                    continue
+                self.__polygon_db.update_row('market_data', row.drop('id').to_dict(), 'id', row['id'])
+                # print(self.__polygon_db.get_rows('market_data', 'id', row['id']))
+
+        self.__polygon_db._commit
+
 if __name__ == '__main__':
+    def normalize_it(column):
+        min_val = column.min()
+        max_val = column.max()
+        return column.apply(
+            lambda x: (x - min_val) / (max_val - min_val)
+        ) 
     p = DataWrangler()
-    print(p.sic_code()['office'].sort_values().unique())
+    print(p.sic_code()['industry_title'].sort_values().unique())
+    print(p.sic_code()['office'].value_counts().sort_values())
+    # # p._normalize('close')
+    # # print((p.all_market_data()))
+    # import seaborn as sns
+    # df = p.all_market_data()
+    # df = df.sort_values('timestamp')
+    # df = df[df.ticker == 'AA']
+    # df['close__'] = normalize_it(df.close)
+    # print(df[['close_', 'close__']])
+    # df.to_csv('../test.csv', index=False)
