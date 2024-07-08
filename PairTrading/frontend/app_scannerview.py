@@ -4,6 +4,8 @@ from PairTrading.backend.scanner import Scanner
 from PairTrading.frontend.data_utils import DataUtils
 from PairTrading.frontend.pair import Pair
 import pandas as pd
+import numpy as np
+import plotly.express as px
 
 from dash import Dash, html, dcc, Input, Output
 import dash_bootstrap_components as dbc
@@ -37,26 +39,34 @@ scanner_settings = html.Div([
             dbc.InputGroup([dbc.InputGroupText("Max Price"), dbc.Input(id="maxprice", type="number", placeholder=10)]),
             #dbc.InputGroup([dbc.InputGroupText("Min Volume"), dbc.Input(placeholder="Min Volume")]),
             #dbc.InputGroup([dbc.InputGroupText("Max Volume"), dbc.Input(placeholder="Max Volume")]),
-            dbc.InputGroup([dbc.InputGroupText("Sector"), dbc.Select(id="sector-select", options = sector_dropdown, placeholder="All")])
+            dbc.InputGroup([dbc.InputGroupText("Sector"), dbc.Select(id="sector-select", options = sector_dropdown, placeholder="All")]),
+            dbc.Checkbox(id="scan-pairs", label="Scan Pairs", value="")
         ])
     ])
 ])
 
 #Charts page content
-charts = []
+line_charts = []
+compare_charts = []
 for i in range(200):
-    chart = DashChart(f"temp{i}", "line")
-    chart.set_callback_app(app)
-    charts.append(chart)
+    linechart = DashChart(f"templine{i}", "line")
+    linechart.set_callback_app(app)
+    line_charts.append(linechart)
+
+    comparechart = DashChart(f"tempcompare{i}", "compare")
+    comparechart.set_callback_app(app)
+    compare_charts.append(comparechart)
+
+
 
 ### si je cree le scanner ici au lieu de ligne 59
-scanner = Scanner()
+#scanner = Scanner()
 
-def get_chart_page(minprice, maxprice, sector):
+def show_filtered_tickers(minprice, maxprice, sector):
     chart_counter = 0
     layout_elements = []
 
-    #scanner = Scanner()
+    scanner = Scanner()
     scanner.min_price = minprice
     scanner.max_price = maxprice
     scanner.min_vol = 0
@@ -76,15 +86,74 @@ def get_chart_page(minprice, maxprice, sector):
         if i > max_tickers:
             break
     
-        chart_compare = charts[chart_counter]
-        chart_compare.label = t
+        chart = line_charts[chart_counter]
+        chart.label = t
+        chart.data = df_
+        #chart.set_callback_app(app)
         chart_counter += 1
-        chart_compare.data = df_
 
         ChartCard = [
             dbc.CardBody([
                 dbc.Row([
-                    dbc.Col(chart_compare.get_layout(),width=6),
+                    dbc.Col(chart.get_layout(),width=6),
+                ])
+            ])                
+        ]
+
+        chartCard = dbc.Card(
+            ChartCard
+        )  
+        
+        layout_elements.append(chartCard)
+
+    return layout_elements
+
+def show_filtered_pairs(minprice, maxprice, sector):
+    chart_counter = 0
+    filter_result = [["TFC", "OWL", 0.4], ["FITB", "NWBI", 0.1], ["TFC", "RF", 0], ["HOOD", "OWL", 0.4]]
+
+    layout_elements = []
+    #data = np.random.normal(2, 2, size=500) # replace with your own data source
+    #fig = px.histogram(data, range_x=[-10, 10])
+    #layout_elements.append("hist")
+
+    scanner = Scanner()
+    scanner.min_price = minprice
+    scanner.max_price = maxprice
+    scanner.min_vol = 0
+    scanner.office = sector
+    tickers = scanner.filtered_tickers()
+
+    i = 0
+
+    max_tickers = 15
+
+    for p in filter_result:
+        print(p[0], p[1])
+        df_ = df[df.ticker == p[0]]
+        dfc = df[df.ticker == p[1]]
+        if df_.empty or p[0].find(".") >= 0 or p[1].find(".") >=0:
+            continue
+
+        i += 1
+        if i > max_tickers:
+            break
+    
+        chart = compare_charts[chart_counter]
+        chart.chartType = "compare"
+        chart.label = f"{p[0]} - {p[1]} - {p[2]}"
+        chart.data = df_
+        chart.compareData = dfc
+        chart_counter += 1
+
+        #chart.set_callback_app(app)
+        print(df_)
+        print(dfc)
+
+        ChartCard = [
+            dbc.CardBody([
+                dbc.Row([
+                    dbc.Col(chart.get_layout(),width=6),
                 ])
             ])                
         ]
@@ -111,15 +180,17 @@ app.layout = html.Div([
         #Input("pagination", "active_page"),
         Input("minprice", "value"),
         Input("maxprice", "value"),
-        Input("sector-select", "value")
+        Input("sector-select", "value"),
+        Input("scan-pairs", "value")
     ],
 )
 
-def apply_filter_callback(minprice, maxprice, sector):
+def apply_filter_callback(minprice, maxprice, sector, pairs):
     if minprice and maxprice and sector:
-        print(sector_dropdown[int(sector)-1]["label"])
-        return get_chart_page(minprice, maxprice, sector_dropdown[int(sector)-1]["label"])
+        if pairs:
+            return show_filtered_pairs(minprice, maxprice, sector_dropdown[int(sector)-1]["label"])
 
-    #return sector_dropdown[int(sector)-1]["label"]
+        else:
+            return show_filtered_tickers(minprice, maxprice, sector_dropdown[int(sector)-1]["label"])
 
 app.run_server(debug=True, port=8060)
