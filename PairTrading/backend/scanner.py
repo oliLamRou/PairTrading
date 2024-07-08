@@ -15,7 +15,7 @@ class Scanner(DataWrangler):
         self._pair_df = pd.DataFrame()
 
         #Sector
-        self.office = None
+        self.office = 'Office of Technology'
         self.industry = None
 
         #Ticker Details
@@ -26,7 +26,7 @@ class Scanner(DataWrangler):
 
         #Market Data
         self.avg_length = 30
-        self.avg_vol = 10000000
+        self.avg_vol = 1000000
 
         #Pair
         self.avg_length_for_ratio = 90
@@ -111,19 +111,16 @@ class Scanner(DataWrangler):
             )
 
         t = self.filtered_tickers()
-        market_data = self.all_market_data() #market_data should take a list
+        market_data = self.all_market_data().pivot(index='timestamp', columns='ticker', values='close_')
         pair_df = pd.DataFrame()
         for pair in list(itertools.combinations(t, 2)):
-            A = market_data[market_data.ticker == pair[0]].reset_index(drop=True)['close_']
-            B = market_data[market_data.ticker == pair[1]].reset_index(drop=True)['close_']
-
-            pair_df.loc[pair_df.size, ['A', 'B', 'ratio']] = [pair[0], pair[1], (A - B).mean()]
-            pair_df.reset_index(drop=True, inplace=True)
+            pair_df.loc[pair_df.size, ['A', 'B', 'ratio']] = [pair[0], pair[1], (market_data[pair[0]] - market_data[pair[1]]).mean()]
+            # pair_df.reset_index(drop=True, inplace=True)
 
         # pair_df.ratio.hist()
         # plt.show()
         # pair_df.to_csv('../pair_df.csv', index=False)
-        return pair_df
+        return pair_df.reset_index(drop=True)
 
     def update_db(self):
         self.min_price = 10
