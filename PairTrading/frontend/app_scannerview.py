@@ -108,9 +108,18 @@ def show_filtered_tickers(minprice, maxprice, sector):
 
     return layout_elements
 
+scanner = Scanner()
+scanner.min_price = 10
+scanner.max_price = 50
+scanner.min_vol = 1000000
+scanner.office = "Office of Finance"
+#scanner.office = None
+pairs_df = scanner.get_pairs()
+
 def show_filtered_pairs(minprice, maxprice, sector):
+    print("SFP")
     chart_counter = 0
-    filter_result = [["TFC", "OWL", 0.4], ["FITB", "NWBI", 0.1], ["TFC", "RF", 0], ["HOOD", "OWL", 0.4]]
+    filter_result = [["GNW", "OWL", 0.4], ["FITB", "NWBI", 0.1], ["TFC", "RF", 0], ["HOOD", "OWL", 0.4]]
 
     layout_elements = []
     #data = np.random.normal(2, 2, size=500) # replace with your own data source
@@ -120,15 +129,60 @@ def show_filtered_pairs(minprice, maxprice, sector):
     scanner = Scanner()
     scanner.min_price = minprice
     scanner.max_price = maxprice
-    scanner.min_vol = 0
+    scanner.min_vol = 1000000
     scanner.office = sector
-    tickers = scanner.filtered_tickers()
-
+    #pairs_df = scanner.get_pairs()
+    filtered_pairs_df = pairs_df[pairs_df.ratio.abs() <= 0.05].reset_index(drop=True).sort_values(by=("ratio"), ascending=False)
+    print(filtered_pairs_df)
     i = 0
 
-    max_tickers = 15
+    max_tickers = 50
 
-    for p in filter_result:
+    #row = filtered_pairs_df.tail(1)
+    #while True:
+    for cols, row in filtered_pairs_df.iterrows():
+        pa = row.A
+        pb = row.B
+        ratio = row.ratio
+
+        print(pa, pb, ratio)
+        #print(i, row)
+        df_ = df[df.ticker == pa]
+        dfc = df[df.ticker == pb]
+        #print(df_)
+        if df_.empty or pa.find(".") >= 0 or pb.find(".") >=0:
+            continue
+
+        i += 1
+        if i > max_tickers:
+            break
+    
+        chart = compare_charts[chart_counter]
+        chart.chartType = "compare"
+        chart.label = f"{pa} - {pb} - {ratio}"
+        chart.data = df_
+        chart.compareData = dfc
+        chart_counter += 1
+
+        #chart.set_callback_app(app)
+        #print(df_)
+        #print(dfc)
+
+        ChartCard = [
+            dbc.CardBody([
+                dbc.Row([
+                    dbc.Col(chart.get_layout(),width=6),
+                ])
+            ])                
+        ]
+
+        chartCard = dbc.Card(
+            ChartCard
+        )  
+        
+        layout_elements.append(chartCard)
+
+    """ for p in filter_result:
         print(p[0], p[1])
         df_ = df[df.ticker == p[0]]
         dfc = df[df.ticker == p[1]]
@@ -162,7 +216,7 @@ def show_filtered_pairs(minprice, maxprice, sector):
             ChartCard
         )  
         
-        layout_elements.append(chartCard)
+        layout_elements.append(chartCard) """
 
     return layout_elements
 
@@ -192,5 +246,6 @@ def apply_filter_callback(minprice, maxprice, sector, pairs):
 
         else:
             return show_filtered_tickers(minprice, maxprice, sector_dropdown[int(sector)-1]["label"])
-
+        
+show_filtered_pairs(10, 50, "Office of Finance")
 app.run_server(debug=True, port=8060)
