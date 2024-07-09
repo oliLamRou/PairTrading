@@ -162,21 +162,9 @@ class DataWrangler(DataBase, Polygon):
         self.__polygon_db._commit
 
 if __name__ == '__main__':
-    def normalize_it(column):
-        min_val = column.min()
-        max_val = column.max()
-        return column.apply(
-            lambda x: (x - min_val) / (max_val - min_val)
-        ) 
-    p = DataWrangler()
-    print(p.sic_code()['industry_title'].sort_values().unique())
-    print(p.sic_code()['office'].value_counts().sort_values())
-    # # p._normalize('close')
-    # # print((p.all_market_data()))
-    # import seaborn as sns
-    # df = p.all_market_data()
-    # df = df.sort_values('timestamp')
-    # df = df[df.ticker == 'AA']
-    # df['close__'] = normalize_it(df.close)
-    # print(df[['close_', 'close__']])
-    # df.to_csv('../test.csv', index=False)
+    dw = DataWrangler()
+    #6021
+    # print(dw.ticker_info('KEY').T)
+    print(dw.sic_code().to_csv('../sic_code.csv', index=True))
+
+

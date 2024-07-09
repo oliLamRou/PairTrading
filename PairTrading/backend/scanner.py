@@ -15,7 +15,7 @@ class Scanner(DataWrangler):
         self._pair_df = pd.DataFrame()
 
         #Sector
-        self.office = 'Office of Technology'
+        self.office = None
         self.industry = None
 
         #Ticker Details
@@ -44,10 +44,7 @@ class Scanner(DataWrangler):
         codes = sic_code_df[sic_code_df[sic_type] == sic]['sic_code']
         
         ticker_details_df = self.all_ticker_info()
-        return ticker_details_df[
-                (ticker_details_df.sic_code >= codes.min()) & 
-                (ticker_details_df.sic_code <= codes.max())
-            ].ticker.to_list()
+        return ticker_details_df[ticker_details_df.sic_code.isin(codes)].ticker.to_list()
 
     @property
     def sic_by_office(self) -> list:
@@ -70,28 +67,16 @@ class Scanner(DataWrangler):
 
     @property
     def avg_volume_filter(self) -> list:
-        #NOTE: This could get 10x faster without a loop
-        #Market Data
-        market_data_df = self.all_market_data()
-        tickers_ = []
-        for ticker in self.tickers:
-            ticker_df = market_data_df[
-                market_data_df['ticker'] == ticker
-            ]
-            #If avg vol is SMALLER it skip
-            if ticker_df.volume[-self.avg_length:].mean() < self.avg_vol:
-                continue
-
-            tickers_.append(ticker)
-
-        return tickers_
+        market_data_df = self.all_market_data().pivot(index='timestamp', columns='ticker', values='volume')
+        tickers = market_data_df[-self.avg_length:].mean() > self.avg_vol
+        return tickers[tickers].index.to_list()
 
     def filtered_tickers(self):
-        if self.office:
-            self.tickers = self.tickers.intersection(self.sic_by_office)
+        # if self.office:
+        #     self.tickers = self.tickers.intersection(self.sic_by_office)
         
-        if self.industry:
-            self.tickers = self.tickers.intersection(self.sic_by_industry)
+        # if self.industry:
+        #     self.tickers = self.tickers.intersection(self.sic_by_industry)
 
         #Price and Volume from a snapshot
         self.tickers = self.tickers.intersection(self.snapshot_filter)
@@ -102,24 +87,33 @@ class Scanner(DataWrangler):
 
 
     def get_pairs(self) -> pd.DataFrame():
-        #NOTE: ADD OFFICE
-        def normalize_it(df):
-            min_val = df.close.min()
-            max_val = df.close.max()
-            return df.close.apply(
-                lambda x: (x - min_val) / (max_val - min_val)
-            )
-
         t = self.filtered_tickers()
+        all_ticker_info = self.all_ticker_info()
         market_data = self.all_market_data().pivot(index='timestamp', columns='ticker', values='close_')
         pair_df = pd.DataFrame()
-        for pair in list(itertools.combinations(t, 2)):
-            pair_df.loc[pair_df.size, ['A', 'B', 'ratio']] = [pair[0], pair[1], (market_data[pair[0]] - market_data[pair[1]]).mean()]
-            # pair_df.reset_index(drop=True, inplace=True)
 
-        # pair_df.ratio.hist()
-        # plt.show()
-        # pair_df.to_csv('../pair_df.csv', index=False)
+        for i, row in self.sic_code().iterrows():
+            sic_code = row.to_dict().get('sic_code')
+            industry_title = row.to_dict().get('industry_title')
+            industry_tickers = all_ticker_info[all_ticker_info.sic_code == sic_code].ticker.to_list()
+            if len(industry_tickers) < 3:
+                continue
+
+
+            # print(t)
+            # print()
+            t_ = t.intersection(industry_tickers)
+            for pair in list(itertools.combinations(t_, 2)):
+                columns = ['A', 'B', 'ratio', 'industry_title', 'rank']
+                values = [
+                    pair[0],
+                    pair[1],
+                    ((market_data[pair[0]] - market_data[pair[1]]).abs()).mean(),
+                    industry_title,
+                    1
+                ]
+                pair_df.loc[pair_df.size, columns] = values
+
         return pair_df.reset_index(drop=True)
 
     def update_db(self):
@@ -148,15 +142,3 @@ if __name__ == '__main__':
     # print(s.tickers)
     df = s.get_pairs()
     print(df)
-
-    # x = np.array(s.market_data('ASTS').close).reshape(-1, 1)
-    # min_max_scaler = preprocessing.MinMaxScaler()
-    # x_scaled = min_max_scaler.fit_transform(x)
-    # df = pd.DataFrame(x_scaled)
-    # print(df)
-    # close = s.market_data('ASTS').apply(lambda x: (x-x.mean())/ x.std())
-    # print(close)
-    # df = s.all_market_data()
-    # # print(pd.concat([df.groupby('ticker')['volume'].rolling(30).mean().tail(1)]))
-    # print(pd.concat([df.groupby('ticker')['volume'].rolling(30).mean().tail(1)]))
-    # # market_data_df.volume.rolling(30).mean()
