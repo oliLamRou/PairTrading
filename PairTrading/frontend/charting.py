@@ -212,7 +212,8 @@ class DashChart:
         if normalize:
             dfA = d.normalize_minmax(self._data, self.dataKeys['Close'])
             dfB = d.normalize_minmax(self.compareData, self.dataKeys['Close'])
-            
+
+        pd.options.mode.copy_on_write = True
         dfB[self.dataKeys['Close']] = dfB[self.dataKeys['Close']] * scale + offset
 
         figures = [

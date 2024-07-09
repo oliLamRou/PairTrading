@@ -35,12 +35,12 @@ scanner_settings = html.Div([
     dbc.Card([       
         dbc.CardHeader(html.H6("Scanner Filter", className="card-title")),
         dbc.CardBody([
-            dbc.InputGroup([dbc.InputGroupText("Min Price"), dbc.Input(id="minprice", type="number", placeholder=2)]),
-            dbc.InputGroup([dbc.InputGroupText("Max Price"), dbc.Input(id="maxprice", type="number", placeholder=10)]),
+            dbc.InputGroup([dbc.InputGroupText("Min Price"), dbc.Input(id="minprice", type="number", value=2)]),
+            dbc.InputGroup([dbc.InputGroupText("Max Price"), dbc.Input(id="maxprice", type="number", value=10)]),
             #dbc.InputGroup([dbc.InputGroupText("Min Volume"), dbc.Input(placeholder="Min Volume")]),
             #dbc.InputGroup([dbc.InputGroupText("Max Volume"), dbc.Input(placeholder="Max Volume")]),
             dbc.InputGroup([dbc.InputGroupText("Sector"), dbc.Select(id="sector-select", options = sector_dropdown, placeholder="All")]),
-            dbc.Checkbox(id="scan-pairs", label="Scan Pairs", value="")
+            dbc.Checkbox(id="scan-pairs", label="Scan Pairs", value=True)
         ])
     ])
 ])
@@ -75,7 +75,7 @@ def show_filtered_tickers(minprice, maxprice, sector):
 
     i = 0
 
-    max_tickers = 15
+    max_tickers = 150
 
     for t in tickers:
         df_ = df[df.ticker == t]
@@ -111,8 +111,8 @@ def show_filtered_tickers(minprice, maxprice, sector):
 scanner = Scanner()
 scanner.min_price = 10
 scanner.max_price = 50
-scanner.min_vol = 1000000
-scanner.office = "Office of Finance"
+scanner.min_vol = 5000000
+scanner.office = "Office of Technology"
 #scanner.office = None
 pairs_df = scanner.get_pairs()
 
@@ -126,13 +126,13 @@ def show_filtered_pairs(minprice, maxprice, sector):
     #fig = px.histogram(data, range_x=[-10, 10])
     #layout_elements.append("hist")
 
-    scanner = Scanner()
+    #scanner = Scanner()
     scanner.min_price = minprice
     scanner.max_price = maxprice
     scanner.min_vol = 1000000
     scanner.office = sector
     #pairs_df = scanner.get_pairs()
-    filtered_pairs_df = pairs_df[pairs_df.ratio.abs() <= 0.05].reset_index(drop=True).sort_values(by=("ratio"), ascending=False)
+    filtered_pairs_df = pairs_df[pairs_df.ratio.abs() <= 0.15].reset_index(drop=True).sort_values(by=("ratio"), ascending=False)
     print(filtered_pairs_df)
     i = 0
 
@@ -242,9 +242,11 @@ app.layout = html.Div([
 def apply_filter_callback(minprice, maxprice, sector, pairs):
     if minprice and maxprice and sector:
         if pairs:
+            print(sector_dropdown[int(sector)-1]["label"])
             return show_filtered_pairs(minprice, maxprice, sector_dropdown[int(sector)-1]["label"])
 
         else:
+            
             return show_filtered_tickers(minprice, maxprice, sector_dropdown[int(sector)-1]["label"])
         
 show_filtered_pairs(10, 50, "Office of Finance")
