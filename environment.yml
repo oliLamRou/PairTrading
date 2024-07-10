@@ -11,3 +11,4 @@ dependencies:
   - python=3.11
   - dash
   - dash-bootstrap-components
+  - yfinance

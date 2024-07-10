@@ -108,28 +108,35 @@ class Scanner(DataWrangler):
         return pair_df.reset_index(drop=True)
 
     def update_db(self):
-        self.min_price = 10
-        self.max_price = 50
-        self.min_vol = 1000000
-        df = self.filtered_tickers()
-        print(len(df.ticker))
-        for ticker in df.ticker:
-            print(f'/// Doing {ticker}')
+        self.min_price = 2
+        self.max_price = 200
+        self.min_vol = 100
+        tickers = self.snapshot_filter
+        for ticker in tickers:
             if not self._DataWrangler__polygon_db.has_value('ticker_details', 'ticker', ticker):
+                print(f'/// Doing {ticker}')
                 df = self.ticker_info(ticker)
+                missing = set(tickers).difference(set(self._DataWrangler__polygon_db.get_table('ticker_details').ticker.to_list()))
+                print(f'-> {len(missing)} to download\n')
                 time.sleep(15)
 
-            df = self.market_data(ticker)
-            if df.empty:
-                self.market_data(ticker, update=True)
-                time.sleep(15)
+            # df = self.market_data(ticker)
+            # if df.empty:
+            #     self.market_data(ticker, update=True)
+            #     time.sleep(15)
 
 if __name__ == '__main__':
     s = Scanner()
     s.min_price = 10
     s.max_price = 40
     s.min_vol = 1000000
+    s.update_db()
+    # df = s.market_snapshot()
+    # print(df.info())
+    # df = df[(df.close < 50) & (df.close > 1)]
+    # df.close.hist(bins=100)
+    # plt.show()
     # df = s.filtered_tickers()
     # print(s.tickers)
-    df = s.get_pairs()
-    print(df)
+    # df = s.get_pairs()
+    # print(df)
