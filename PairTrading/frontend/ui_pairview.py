@@ -21,14 +21,13 @@ class PairView:
         print("build")
 
     def get_layout(self):
-
         df_a = self.market_data[self.market_data.ticker == self.ticker_a]
         df_b = self.market_data[self.market_data.ticker == self.ticker_b]
 
-        ddf = pd.DataFrame()  
+        ddf = pd.DataFrame()
 
-        ddf['timestamp'] = df_a.timestamp
-        ddf['close'] = df_a.close - df_b.close * self.ratio
+        ddf['date'] = df_a.index
+        ddf['close'] = df_a.close - df_b.close * self.diff_average
         
         #Pair Price Chart
         chart_pairPrice = DashChart("price chart", "candlestick")
@@ -45,12 +44,10 @@ class PairView:
         chart_compare.set_callback_app(self.callback_app)
 
         #Pair Ratio Chart
+        ratio_df = (df_a.set_index("date").close / df_b.set_index("date").close).reset_index()
         chart_ratio = DashChart("ratio-chart", "line")
         chart_ratio.label = "Pair Ratio"
-        ddfr = ddf
-        ddfr['close'] = df_a.set_index('timestamp').reset_index().close / df_b.set_index('timestamp').reset_index().close
-        print(ddfr)
-        chart_ratio.data = ddfr
+        chart_ratio.data = ratio_df
         chart_ratio.set_callback_app(self.callback_app)
 
         #pair details card
@@ -103,9 +100,9 @@ if __name__ == '__main__':
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
     dw = DataWrangler()
-    df = dw._DataWrangler__polygon_db.get_table('market_data')
-
-    pair_view = PairView("AA", "AU")
+    df = dw.all_market_data
+    
+    pair_view = PairView("MTDR", "OVV")
     pair_view.market_data = df
     pair_view.set_callback_app(app)
 

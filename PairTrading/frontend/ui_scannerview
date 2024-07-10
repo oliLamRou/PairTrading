@@ -9,20 +9,21 @@ import dash_bootstrap_components as dbc
 
 class ScannerView:
     def __init__(self, market_data) -> None:
+        print("begin init")
         self.callback_app = None
         self.market_data = market_data
         self.pairs_df = None
         self.scanner = Scanner()
         self.scanner.min_price = 2
-        self.scanner.max_price = 50
-        self.scanner.min_vol = 1000000
+        self.scanner.max_price = 200
+        self.scanner.min_vol = 100000
+        self.market_data = self.scanner.all_market_data
         self.update_pairs()
 
         #Preload chart objects
         self.compare_charts = []
         for i in range(400):
-            self.comparechart = DashChart(f"tempcompare{i}", "compare")
-            self.comparechart.set_callback_app(app)
+            self.comparechart = DashChart(f"tempcompare-scannerview{i}", "compare")
             self.compare_charts.append(self.comparechart)
 
         self.sector_dropdown = [{"label": "All", "value": 1 }]
@@ -32,8 +33,10 @@ class ScannerView:
         for i, s in enumerate(self.pairs_df.industry_title.sort_values().unique()):
             self.industry_dropdown.append({"label": s, "value": i+2})
 
+        print("end init")
+
     def set_callback_app(self, app):
-        self.callback_app = app
+        print("set callback app")
         for c in self.compare_charts:
             c.set_callback_app(app)
 
@@ -43,13 +46,13 @@ class ScannerView:
                 #Input("pagination", "active_page"),
                 Input("minprice", "value"),
                 Input("maxprice", "value"),
-                Input("industry-select", "value")
+                Input("industry-select", "value"),
             ],
         )
         def apply_filter_callback(minprice, maxprice, industry):
             if minprice and maxprice and industry:
-                #print(sector_dropdown[int(industry)-1]["label"])
-                return self.filter_pairs(minprice, maxprice, self.industry_dropdown[int(industry)-1]["label"])
+                print(self.industry_dropdown[int(industry)-1]["label"])
+                return self.filter_pairs(self.industry_dropdown[int(industry)-1]["label"])
 
     def update_pairs(self):
         self.pairs_df = self.scanner.get_pairs()
@@ -61,8 +64,6 @@ class ScannerView:
                 dbc.CardBody([
                     dbc.InputGroup([dbc.InputGroupText("Min Price"), dbc.Input(id="minprice", type="number", value=2)]),
                     dbc.InputGroup([dbc.InputGroupText("Max Price"), dbc.Input(id="maxprice", type="number", value=10)]),
-                    #dbc.InputGroup([dbc.InputGroupText("Min Volume"), dbc.Input(placeholder="Min Volume")]),
-                    #dbc.InputGroup([dbc.InputGroupText("Max Volume"), dbc.Input(placeholder="Max Volume")]),
                     dbc.InputGroup([dbc.InputGroupText("Sector"), dbc.Select(id="industry-select", options = self.sector_dropdown, value="All")])
                 ])
             ])
@@ -75,20 +76,21 @@ class ScannerView:
 
         chart_counter = 0
         layout_elements = []
-
-        filtered_pairs_df = self.pairs_df[(self.pairs_df.ratio <= 0.1) & (self.pairs_df.industry_title == industry)].reset_index(drop=True).sort_values(by=("ratio"), ascending=False)
         
+        filtered_pairs_df = self.pairs_df[(self.pairs_df.ratio <= 0.12) & (self.pairs_df.industry_title == industry)].reset_index(drop=True).sort_values(by=("ratio"), ascending=False)
+        print(self.pairs_df)
+
         i = 0
         max_tickers = 50
-        for index, row in filtered_pairs_df.iterrows():
+        for i, row in filtered_pairs_df.iterrows():
             ticker_a = row.A
             ticker_b = row.B
             ratio = row.ratio
 
             print(ticker_a, ticker_b, ratio)
 
-            tickera_df = df[df.ticker == ticker_a]
-            tickerb_df = df[df.ticker == ticker_b]
+            tickera_df = self.scanner.all_market_data[self.scanner.all_market_data.ticker == ticker_a]
+            tickerb_df = self.scanner.all_market_data[self.scanner.all_market_data.ticker == ticker_b]
 
             if tickera_df.empty or ticker_a.find(".") >= 0 or ticker_b.find(".") >=0:
                 continue
@@ -125,9 +127,10 @@ if __name__ == '__main__':
 
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-    dw = DataWrangler()
-    df = dw._DataWrangler__polygon_db.get_table('market_data')
-    scanner_view = ScannerView(market_data=df)
+    #dw = DataWrangler()
+   
+    scanner_view = ScannerView(market_data=None)
+    scanner_view.set_callback_app(app)
 
     app.layout = html.Div(
         scanner_view.get_layout()

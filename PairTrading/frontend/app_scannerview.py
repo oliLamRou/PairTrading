@@ -3,9 +3,6 @@ from PairTrading.backend.data_wrangler import DataWrangler
 from PairTrading.backend.scanner import Scanner
 from PairTrading.frontend.data_utils import DataUtils
 from PairTrading.frontend.pair import Pair
-import pandas as pd
-import numpy as np
-import plotly.express as px
 
 from dash import Dash, html, dcc, Input, Output
 import dash_bootstrap_components as dbc
@@ -184,42 +181,6 @@ def show_filtered_pairs(minprice, maxprice, industry):
         )  
         
         layout_elements.append(chartCard)
-
-    """ for p in filter_result:
-        print(p[0], p[1])
-        df_ = df[df.ticker == p[0]]
-        dfc = df[df.ticker == p[1]]
-        if df_.empty or p[0].find(".") >= 0 or p[1].find(".") >=0:
-            continue
-
-        i += 1
-        if i > max_tickers:
-            break
-    
-        chart = compare_charts[chart_counter]
-        chart.chartType = "compare"
-        chart.label = f"{p[0]} - {p[1]} - {p[2]}"
-        chart.data = df_
-        chart.compareData = dfc
-        chart_counter += 1
-
-        #chart.set_callback_app(app)
-        print(df_)
-        print(dfc)
-
-        ChartCard = [
-            dbc.CardBody([
-                dbc.Row([
-                    dbc.Col(chart.get_layout(),width=6),
-                ])
-            ])                
-        ]
-
-        chartCard = dbc.Card(
-            ChartCard
-        )  
-        
-        layout_elements.append(chartCard) """
 
     return layout_elements
 
