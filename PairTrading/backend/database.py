@@ -54,6 +54,9 @@ class DataBase:
     @property
     def _commit(self):
         self.conn.commit()
+    
+    def _vacuum(self):
+        self.conn.execute("VACUUM")
 
     def setup_table(self, table_name: str, columns: dict):
         self.create_table(table_name)
@@ -99,6 +102,7 @@ if __name__ == '__main__':
     from PairTrading.src import _constant
     db = DataBase('../../data/polygon.db')
 
-    print(db.get_table('sic_code')['office'].unique())
+    df = db.get_table('ticker_details')
+    print(df.ticker)
 
 

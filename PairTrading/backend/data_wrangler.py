@@ -1,3 +1,4 @@
+import os
 import configparser
 import time
 from datetime import timedelta
@@ -14,12 +15,18 @@ from PairTrading.src.utils import PROJECT_ROOT
 #DATA HANDLER
 class DataWrangler(DataBase, Polygon):
     POLYGON_DB = (PROJECT_ROOT / 'data' / 'polygon.db').resolve()
+    YFINANCE_DB = (PROJECT_ROOT / 'data' / 'yfinance.db').resolve()
     TICKER_INFO_TABLE_NAME = 'ticker_details'
     MARKET_DATA_TABLE_NAME = 'market_data'
 
     def __init__(self):
         Polygon.__init__(self)
         self.__polygon_db = DataBase(path = self.POLYGON_DB)
+        self.__yfinance_db = DataBase(path = self.YFINANCE_DB)
+
+        #Properties
+        self._all_ticker_info = pd.DataFrame()
+        self._all_market_data = pd.DataFrame()
         
     def _renamed_columns(self, columns: dict) -> dict:
          return {v[0]: v[1] for v in columns.values()}
@@ -72,14 +79,17 @@ class DataWrangler(DataBase, Polygon):
 
         return self.__polygon_db.get_table(table_name)
 
+    @property
     def all_ticker_info(self):
-        #Create and add whatever is missing
-        self.__polygon_db.setup_table(
-            self.TICKER_INFO_TABLE_NAME,
-            self._renamed_columns(_constant.TICKER_DETAILS_COLUMNS)
-        )
+        if self._all_ticker_info.empty:
+            self.__polygon_db.setup_table(
+                self.TICKER_INFO_TABLE_NAME,
+                self._renamed_columns(_constant.TICKER_DETAILS_COLUMNS)
+            )
 
-        return self.__polygon_db.get_table(self.TICKER_INFO_TABLE_NAME)
+            self._all_ticker_info = self.__polygon_db.get_table(self.TICKER_INFO_TABLE_NAME)
+
+        return self._all_ticker_info
 
     def ticker_info(self,
             ticker: str,
@@ -105,8 +115,12 @@ class DataWrangler(DataBase, Polygon):
 
         return self.__polygon_db.get_rows(self.TICKER_INFO_TABLE_NAME, 'ticker', ticker)
 
+    @property
     def all_market_data(self) -> pd.DataFrame:
-        return self.__polygon_db.get_table(self.MARKET_DATA_TABLE_NAME)
+        if self._all_market_data.empty:
+            self._all_market_data = self.__yfinance_db.get_table(self.MARKET_DATA_TABLE_NAME)
+
+        return self._all_market_data
 
     def market_data(self,
             ticker: str,
@@ -138,33 +152,57 @@ class DataWrangler(DataBase, Polygon):
         #NOTE: return from a list of ticker
         return df[(df.ticker == ticker) & (df.timespan == 'd')]
 
-    def _normalize(self, column: str):
-        def normalize_it(column):
-            min_val = column.min()
-            max_val = column.max()
-            return column.apply(
-                lambda x: (x - min_val) / (max_val - min_val)
-            )        
-        #NOTE: will need to bake normalized feature
-        new_col = f'{column}_'
-        self.__polygon_db.add_columns('market_data', {new_col: 'REAL'})
-        all_df = self.all_market_data()
-        for ticker in all_df['ticker'].unique():
-            df = all_df[all_df['ticker'] == ticker].copy()
-            df[new_col] = normalize_it(df.close)
-            for i, row in df.iterrows():
-                if self.__polygon_db.get_rows('market_data', 'id', row['id']).empty:
-                    print(i, row)
-                    continue
-                self.__polygon_db.update_row('market_data', row.drop('id').to_dict(), 'id', row['id'])
-                # print(self.__polygon_db.get_rows('market_data', 'id', row['id']))
+    def format_results(self,
+            row: dict, 
+            columns_type: dict
+        ) -> dict:
 
-        self.__polygon_db._commit
+        results_ = {}
+        for k, v in row.items():
+            column = columns_type.get(k)
+            if not column:
+                print(f'Column: {k} does exist. It will be skipped.\n')
+                continue
+
+            column_name = column[0]
+            column_type = column[1]
+            if column_type == 'INTERGER':
+                results_[column_name] = int(v)
+            elif column_type == 'REAL':
+                results_[column_name] = float(v)
+            else:
+                results_[column_name] = str(v)
+
+        return results_
+
+    # def y_market_data(self):
+    #     path = '../../data/yfinance'
+    #     self.__yfinance_db.setup_table(
+    #         'market_data',
+    #         self._renamed_columns(_constant.YFINANCE_COLUMNS)
+    #     )
+    #     for file in os.listdir(path):
+    #         if file == '.DS_Store':
+    #             continue
+
+    #         ticker = file.replace('.csv', '')
+    #         print(ticker)
+    #         df = pd.read_csv(path + '/' + file)
+    #         self.__yfinance_db._delete_rows('market_data', 'ticker', ticker)
+    #         for i, row in df.iterrows():
+    #             row = row.to_dict()
+    #             row['ticker'] = ticker
+    #             row['timespan'] = 'd'
+    #             row = self.format_results(row, _constant.YFINANCE_COLUMNS)
+    #             self.__yfinance_db.add_row('market_data', row)
+
+    #     self.__yfinance_db._commit
+    #     print(self.__yfinance_db.get_table('market_data'))
+
 
 if __name__ == '__main__':
     dw = DataWrangler()
-    #6021
-    # print(dw.ticker_info('KEY').T)
-    print(dw.sic_code().to_csv('../sic_code.csv', index=True))
+    dw._DataWrangler__yfinance_db._vacuum()
+    # dw.y_market_data()
 
 
