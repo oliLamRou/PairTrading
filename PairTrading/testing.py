@@ -1,14 +1,34 @@
+import os
 import time
 import pandas as pd
 import numpy as np
-# from PairTrading.backend.data_wrangler import DataWrangler
+from PairTrading.backend.data_wrangler import DataWrangler
+from PairTrading.backend.scanner import Scanner
 import math
 import matplotlib.pyplot as plt
 import itertools
 import yfinance as yf
 
-# data = yf.download("AAPL", start="2020-01-01", end="2021-01-01")
-# print(data)
+
+s = Scanner()
+s.min_price = 2
+s.max_price = 200
+s.min_vol = 100
+tickers = s.snapshot_filter
+for ticker in tickers:
+	if (ticker+'.csv') in os.listdir('../data/yfinance'):
+		continue
+
+	data = yf.download(ticker, start="2023-07-09", end="2024-07-09")
+	if data.empty:
+		continue
+
+	print(ticker)
+	data.reset_index().to_csv(f'../data/yfinance/{ticker}.csv', index=False)
+	time.sleep(0.1)
+
+
+
 # sbux = yf.Ticker("SBUX")
 # x = sbux.info
 # print(x)

@@ -66,7 +66,7 @@ class Scanner(DataWrangler):
 
     @property
     def avg_volume_filter(self) -> list:
-        market_data_df = self.all_market_data.pivot(index='timestamp', columns='ticker', values='volume')
+        market_data_df = self.all_market_data.pivot(index='date', columns='ticker', values='volume')
         tickers = market_data_df[-self.avg_length:].mean() > self.avg_vol
         return tickers[tickers].index.to_list()
 
@@ -82,8 +82,9 @@ class Scanner(DataWrangler):
 
     def get_pairs(self) -> pd.DataFrame():
         tickers = self.filtered_tickers
-        market_data = self.all_market_data.pivot(index='timestamp', columns='ticker', values='close')
+        market_data = self.all_market_data.pivot(index='date', columns='ticker', values='close')
         market_data = (market_data - market_data.min()) / (market_data.max() - market_data.min())
+        print(len(self.all_ticker_info))
         
         pair_df = pd.DataFrame()
         for i, row in self.sic_code().iterrows():
@@ -97,8 +98,7 @@ class Scanner(DataWrangler):
             for A, B in list(itertools.combinations(tickers.intersection(industry_tickers), 2)):
                 columns = ['A', 'B', 'ratio', 'industry_title', 'rank']
                 values = [
-                    A,
-                    B,
+                    A, B,
                     (market_data[A] - market_data[B]).abs().mean(),
                     industry_title,
                     1
@@ -130,13 +130,6 @@ if __name__ == '__main__':
     s.min_price = 10
     s.max_price = 40
     s.min_vol = 1000000
-    s.update_db()
-    # df = s.market_snapshot()
-    # print(df.info())
-    # df = df[(df.close < 50) & (df.close > 1)]
-    # df.close.hist(bins=100)
-    # plt.show()
-    # df = s.filtered_tickers()
-    # print(s.tickers)
-    # df = s.get_pairs()
-    # print(df)
+    pair = s.get_pairs()
+    pair = pair[pair['ratio'] < 0.15]
+    print(pair.industry_title.value_counts())

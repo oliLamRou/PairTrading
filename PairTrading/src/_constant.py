@@ -3,6 +3,18 @@ from PairTrading.src.utils import PROJECT_ROOT
 CONFIG = (PROJECT_ROOT / '.config.ini').resolve()
 
 #DB
+YFINANCE_COLUMNS = {
+    'ticker': ['ticker', 'TEXT'],
+    'timespan': ['timespan', 'TEXT'],
+    'Date': ['date', 'TEXT'],
+    'Open': ['open', 'REAL'],
+    'High': ['high', 'REAL'],
+    'Low': ['low', 'REAL'],
+    'Close': ['close', 'REAL'],
+    'Adj Close': ['adj_close', 'REAL'],
+    'Volume': ['volume', 'INTERGER'],
+}
+
 MARKET_DATA_COLUMNS = {
     'ticker': 'TEXT',
     'timespan': 'TEXT',
