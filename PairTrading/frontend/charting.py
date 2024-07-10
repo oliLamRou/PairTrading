@@ -2,23 +2,13 @@ from PairTrading.backend.polygon import Polygon
 from PairTrading.src import _constant
 from PairTrading.frontend.data_utils import DataUtils
 
-from pprint import pprint
-
-import matplotlib.pyplot as plt
 import pandas as pd
 import pandas_ta as ta
-import seaborn as sb
 import plotly.graph_objects as go
 
 from dash import Dash, html, dcc, Input, Output  # pip install dash
-import plotly.express as px
-import dash_ag_grid as dag
 import dash_bootstrap_components as dbc   # pip install dash-bootstrap-components
 
-import matplotlib      # pip install matplotlib
-#matplotlib.use('agg')
-import base64
-from io import BytesIO
 
 class DashChart:
     def __init__(self, name="chart", chartType="line"):
@@ -246,30 +236,20 @@ class DashChart:
 
 if __name__ == '__main__':
 
-    p = Polygon()
-    #print(p.list_tables())
-    #tk = p.get_table("ticker_details")
-    #print(p.get_table("ticker_details").columns)
-    #print( tk[tk.ticker=="AAPL"].T )
-    #print(p.get_table("ticker_details"))
-    
-    tickers = ["day_AA", "day_MSTR", "day_AU", "day_CMA", "day_DVN", "day_GCT", "day_AZEK", "day_BTI", "day_CFLT"]
+    from PairTrading.backend.data_wrangler import DataWrangler
+    dw = DataWrangler()
+    df = dw._DataWrangler__polygon_db.get_table('market_data')
+
+    tickers = ["AA", "MSTR", "AU", "CMA", "DVN", "GCT", "AZEK", "BTI", "CFLT"]
 
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
     charts = []
     for t in tickers:
-        df = p.get_table(t)
-        chart = DashChart(t, "compare")
-        chart.data = df
-        chart.compareData = df
-        chart.dataKeys = {
-            "Time" : _constant.HISTORICAL_COLUMNS['t'][0], 
-            "Open" : _constant.HISTORICAL_COLUMNS['o'][0],
-            "Close" : _constant.HISTORICAL_COLUMNS['c'][0], 
-            "High" : _constant.HISTORICAL_COLUMNS['h'][0], 
-            "Low" : _constant.HISTORICAL_COLUMNS['l'][0]
-        }
+        chart = DashChart(t, "line")
+        chart.label = t
+        print(df[df.ticker == t])
+        chart.data = df[df.ticker == t]
         
         chart.set_callback_app(app)
         charts.append(chart)

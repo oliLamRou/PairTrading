@@ -1,60 +1,77 @@
 from PairTrading.frontend.charting import DashChart
 from PairTrading.backend.data_wrangler import DataWrangler
-from PairTrading.frontend.data_utils import DataUtils
 from PairTrading.frontend.pair import Pair
 
-from PairTrading.src import _constant
 import pandas as pd
 from dash import Dash, html, dcc, Input, Output 
 import dash_bootstrap_components as dbc  
 
 class PairView:
-    def __init__(self):
-        self.test = "wtf"
-        self.dw = DataWrangler()
-        self.d = DataUtils()
-        self.df = self.dw.market_data("AA")
-        self.cdf = self.dw.market_data("AU")
-        self.app = None
-
-        self.layout_elements=[]
+    def __init__(self, ticker_a, ticker_b, diff_average=1):
+        self.ticker_a = ticker_a
+        self.ticker_b = ticker_b
+        self.diff_average = diff_average
+        self.market_data = None
+        self.callback_app = None
 
     def set_callback_app(self, app):
-        self.app = app
+        self.callback_app = app
         
     def build(self):
         print("build")
 
-        chart_compare = DashChart("A/B Compare", "compare")
-        chart_compare.data = self.df
-        chart_compare.compareData = self.cdf
-        chart_compare.set_callback_app(app)
+    def get_layout(self):
 
-        chart_ratio = DashChart("Pair Ratio", "line")
-        ddf = pd.DataFrame()
-        ddf['timestamp'] = df.timestamp
-        ddf['close'] = df.close / cdf.close
-        chart_ratio.data = ddf
-        chart_ratio.dataKeys = dataKeys
-        chart_ratio.set_callback_app(app)
+        df_a = self.market_data[self.market_data.ticker == self.ticker_a]
+        df_b = self.market_data[self.market_data.ticker == self.ticker_b]
 
-        chart_pairPrice = DashChart("Pair Price", "candlestick")
-        chart_pairPrice.data = df
-        chart_pairPrice.compareData = cdf
-        chart_pairPrice.dataKeys = dataKeys
-        chart_pairPrice.set_callback_app(app)
+        ddf = pd.DataFrame()  
 
-        layout_objects = []
-            
+        ddf['timestamp'] = df_a.timestamp
+        ddf['close'] = df_a.close - df_b.close * self.ratio
+        
+        #Pair Price Chart
+        chart_pairPrice = DashChart("price chart", "candlestick")
+        chart_pairPrice.label = "Pair Price"
+        chart_pairPrice.data = df_a
+        chart_pairPrice.compareData = ddf
+        chart_pairPrice.set_callback_app(self.callback_app)
+
+        #Pair Compare Chart
+        chart_compare = DashChart("Compare-chart", "compare")
+        chart_compare.label = "Pair Compare"
+        chart_compare.data = df_a
+        chart_compare.compareData = df_b
+        chart_compare.set_callback_app(self.callback_app)
+
+        #Pair Ratio Chart
+        chart_ratio = DashChart("ratio-chart", "line")
+        chart_ratio.label = "Pair Ratio"
+        ddfr = ddf
+        ddfr['close'] = df_a.set_index('timestamp').reset_index().close / df_b.set_index('timestamp').reset_index().close
+        print(ddfr)
+        chart_ratio.data = ddfr
+        chart_ratio.set_callback_app(self.callback_app)
+
         #pair details card
-        pairDetailsCard = [
-            html.H3("Pair A / B", className="card-title"),
-            html.Div(d.get_last_price("AA"))
+        detail_card = [
+            dbc.Card([
+                dbc.CardHeader(html.H4(f"{self.ticker_a}-{self.ticker_b} Details", className="card-title")),
+                dbc.CardBody([
+                    #html.H3("Pair Details", className="card-title"),
+                    html.Div([
+                        html.P("Pair Order"),
+                        html.P(f"Pair Last Price: {df_a.iloc[-1:].close.unique()[0]}") ,
+                        html.P(f"{self.ticker_a} Dollar Volume Average: "),
+                        html.P(f"{self.ticker_b} Dollar Volume Average: ")
+                    ])              
+                ])
+            ])
         ]
 
         #pair view card
-        pairViewCard = [
-            dbc.CardHeader(html.H3("Pair A / B", className="card-title")),
+        chart_card = [
+            dbc.CardHeader(html.H3(f"{self.ticker_a}-{self.ticker_b} Pair", className="card-title")),
             dbc.CardBody([
                 dbc.Row([
                     #charts
@@ -65,21 +82,35 @@ class PairView:
                             dbc.Col(chart_ratio.get_layout(),width=6),
                         ])
                     ], width="8"),
+
                     #details
                     dbc.Col(
-                        dbc.Row(dbc.Col(pairDetailsCard))
+                        dbc.Row(dbc.Col(detail_card))
                     )
                 ])
             ])
         ]
-
-        chartCard = dbc.Card(
-            pairViewCard
-        )        
-                        
-        layoutElements = [
-            chartCard
+       
+        layout_elements = [
+            dbc.Card(chart_card)
         ]
 
+        return layout_elements
+
 if __name__ == '__main__':
-    print("damn")
+    print("ui_pairview")
+
+    app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+
+    dw = DataWrangler()
+    df = dw._DataWrangler__polygon_db.get_table('market_data')
+
+    pair_view = PairView("AA", "AU")
+    pair_view.market_data = df
+    pair_view.set_callback_app(app)
+
+    app.layout = html.Div(
+        pair_view.get_layout()
+    )
+
+    app.run_server(debug=True)

@@ -19,17 +19,27 @@ dw = DataWrangler()
 df = dw._DataWrangler__polygon_db.get_table('market_data')
 
 #Scanner settings
-sic_df = dw.sic_code()
-sic_df = sic_df[sic_df.office == 'Office of Energy & Transportation']
-sector_list = dw.sic_code()['office'].sort_values().unique()
+scanner = Scanner()
+
+#sic_df = dw.sic_code()
+#sic_df = sic_df[sic_df.office == 'Office of Energy & Transportation']
+#sector_list = dw.sic_code()['office'].sort_values().unique()
+#industry_list = 
+
+scanner.min_price = 2
+scanner.max_price = 50
+scanner.min_vol = 1000000
+#scanner.office = None
+pairs_df = scanner.get_pairs()
 
 sector_dropdown = [{"label": "All", "value": 1 }]
 industry_dropdown = sector_dropdown
+#industry_dropdown = pairs_df.industry_title.sort_values().unique()
 
 results = 0
 
-for i, s in enumerate(sector_list):
-    sector_dropdown.append({"label": s, "value": i+2})
+for i, s in enumerate(pairs_df.industry_title.sort_values().unique()):
+    industry_dropdown.append({"label": s, "value": i+2})
 
 scanner_settings = html.Div([
     dbc.Card([       
@@ -39,7 +49,7 @@ scanner_settings = html.Div([
             dbc.InputGroup([dbc.InputGroupText("Max Price"), dbc.Input(id="maxprice", type="number", value=10)]),
             #dbc.InputGroup([dbc.InputGroupText("Min Volume"), dbc.Input(placeholder="Min Volume")]),
             #dbc.InputGroup([dbc.InputGroupText("Max Volume"), dbc.Input(placeholder="Max Volume")]),
-            dbc.InputGroup([dbc.InputGroupText("Sector"), dbc.Select(id="sector-select", options = sector_dropdown, placeholder="All")]),
+            dbc.InputGroup([dbc.InputGroupText("Sector"), dbc.Select(id="industry-select", options = sector_dropdown, value="All")]),
             dbc.Checkbox(id="scan-pairs", label="Scan Pairs", value=True)
         ])
     ])
@@ -57,12 +67,10 @@ for i in range(200):
     comparechart.set_callback_app(app)
     compare_charts.append(comparechart)
 
-
-
 ### si je cree le scanner ici au lieu de ligne 59
 #scanner = Scanner()
 
-def show_filtered_tickers(minprice, maxprice, sector):
+def show_filtered_tickers(minprice, maxprice, industry):
     chart_counter = 0
     layout_elements = []
 
@@ -108,15 +116,8 @@ def show_filtered_tickers(minprice, maxprice, sector):
 
     return layout_elements
 
-scanner = Scanner()
-scanner.min_price = 10
-scanner.max_price = 50
-scanner.min_vol = 5000000
-scanner.office = "Office of Technology"
-#scanner.office = None
-pairs_df = scanner.get_pairs()
 
-def show_filtered_pairs(minprice, maxprice, sector):
+def show_filtered_pairs(minprice, maxprice, industry):
     print("SFP")
     chart_counter = 0
     filter_result = [["GNW", "OWL", 0.4], ["FITB", "NWBI", 0.1], ["TFC", "RF", 0], ["HOOD", "OWL", 0.4]]
@@ -130,10 +131,12 @@ def show_filtered_pairs(minprice, maxprice, sector):
     scanner.min_price = minprice
     scanner.max_price = maxprice
     scanner.min_vol = 1000000
-    scanner.office = sector
+    #scanner.office = industry
     #pairs_df = scanner.get_pairs()
-    filtered_pairs_df = pairs_df[pairs_df.ratio.abs() <= 0.15].reset_index(drop=True).sort_values(by=("ratio"), ascending=False)
+    filtered_pairs_df = pairs_df[(pairs_df.ratio <= 0.1) & (pairs_df.industry_title == industry)].reset_index(drop=True).sort_values(by=("ratio"), ascending=False)
+    print(pairs_df)
     print(filtered_pairs_df)
+    print(industry)
     i = 0
 
     max_tickers = 50
@@ -234,20 +237,20 @@ app.layout = html.Div([
         #Input("pagination", "active_page"),
         Input("minprice", "value"),
         Input("maxprice", "value"),
-        Input("sector-select", "value"),
+        Input("industry-select", "value"),
         Input("scan-pairs", "value")
     ],
 )
 
-def apply_filter_callback(minprice, maxprice, sector, pairs):
-    if minprice and maxprice and sector:
+def apply_filter_callback(minprice, maxprice, industry, pairs):
+    if minprice and maxprice and industry:
         if pairs:
-            print(sector_dropdown[int(sector)-1]["label"])
-            return show_filtered_pairs(minprice, maxprice, sector_dropdown[int(sector)-1]["label"])
+            #print(sector_dropdown[int(industry)-1]["label"])
+            return show_filtered_pairs(minprice, maxprice, industry_dropdown[int(industry)-1]["label"])
 
         else:
             
-            return show_filtered_tickers(minprice, maxprice, sector_dropdown[int(sector)-1]["label"])
+            return show_filtered_tickers(minprice, maxprice, industry_dropdown[int(industry)-1]["label"])
         
-show_filtered_pairs(10, 50, "Office of Finance")
+#show_filtered_pairs(10, 50, "Office of Finance")
 app.run_server(debug=True, port=8060)
