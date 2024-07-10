@@ -20,6 +20,10 @@ class DataWrangler(DataBase, Polygon):
     def __init__(self):
         Polygon.__init__(self)
         self.__polygon_db = DataBase(path = self.POLYGON_DB)
+
+        #Properties
+        self._all_ticker_info = pd.DataFrame()
+        self._all_market_data = pd.DataFrame()
         
     def _renamed_columns(self, columns: dict) -> dict:
          return {v[0]: v[1] for v in columns.values()}
@@ -72,14 +76,17 @@ class DataWrangler(DataBase, Polygon):
 
         return self.__polygon_db.get_table(table_name)
 
+    @property
     def all_ticker_info(self):
-        #Create and add whatever is missing
-        self.__polygon_db.setup_table(
-            self.TICKER_INFO_TABLE_NAME,
-            self._renamed_columns(_constant.TICKER_DETAILS_COLUMNS)
-        )
+        if self._all_ticker_info.empty:
+            self.__polygon_db.setup_table(
+                self.TICKER_INFO_TABLE_NAME,
+                self._renamed_columns(_constant.TICKER_DETAILS_COLUMNS)
+            )
 
-        return self.__polygon_db.get_table(self.TICKER_INFO_TABLE_NAME)
+            self._all_ticker_info = self.__polygon_db.get_table(self.TICKER_INFO_TABLE_NAME)
+
+        return self._all_ticker_info
 
     def ticker_info(self,
             ticker: str,
@@ -105,8 +112,12 @@ class DataWrangler(DataBase, Polygon):
 
         return self.__polygon_db.get_rows(self.TICKER_INFO_TABLE_NAME, 'ticker', ticker)
 
+    @property
     def all_market_data(self) -> pd.DataFrame:
-        return self.__polygon_db.get_table(self.MARKET_DATA_TABLE_NAME)
+        if self._all_market_data.empty:
+            self._all_market_data = self.__polygon_db.get_table(self.MARKET_DATA_TABLE_NAME)
+
+        return self._all_market_data
 
     def market_data(self,
             ticker: str,

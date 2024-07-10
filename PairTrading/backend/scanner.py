@@ -31,7 +31,7 @@ class Scanner(DataWrangler):
         #Pair
         self.avg_length_for_ratio = 90
 
-        self.tickers = set(self.all_ticker_info()['ticker'].to_list())
+        self.tickers = set(self.all_ticker_info['ticker'].to_list())
         self.bad_tickers = []
 
     @property
@@ -43,8 +43,7 @@ class Scanner(DataWrangler):
         sic_code_df = self.sic_code()
         codes = sic_code_df[sic_code_df[sic_type] == sic]['sic_code']
         
-        ticker_details_df = self.all_ticker_info()
-        return ticker_details_df[ticker_details_df.sic_code.isin(codes)].ticker.to_list()
+        return self.all_ticker_info[self.all_ticker_info.sic_code.isin(codes)].ticker.to_list()
 
     @property
     def sic_by_office(self) -> list:
@@ -67,17 +66,12 @@ class Scanner(DataWrangler):
 
     @property
     def avg_volume_filter(self) -> list:
-        market_data_df = self.all_market_data().pivot(index='timestamp', columns='ticker', values='volume')
+        market_data_df = self.all_market_data.pivot(index='timestamp', columns='ticker', values='volume')
         tickers = market_data_df[-self.avg_length:].mean() > self.avg_vol
         return tickers[tickers].index.to_list()
 
-    def filtered_tickers(self):
-        # if self.office:
-        #     self.tickers = self.tickers.intersection(self.sic_by_office)
-        
-        # if self.industry:
-        #     self.tickers = self.tickers.intersection(self.sic_by_industry)
-
+    @property
+    def filtered_tickers(self) -> set():
         #Price and Volume from a snapshot
         self.tickers = self.tickers.intersection(self.snapshot_filter)
 
@@ -87,28 +81,25 @@ class Scanner(DataWrangler):
 
 
     def get_pairs(self) -> pd.DataFrame():
-        t = self.filtered_tickers()
-        all_ticker_info = self.all_ticker_info()
-        market_data = self.all_market_data().pivot(index='timestamp', columns='ticker', values='close_')
+        tickers = self.filtered_tickers
+        market_data = self.all_market_data.pivot(index='timestamp', columns='ticker', values='close')
+        market_data = (market_data - market_data.min()) / (market_data.max() - market_data.min())
+        
         pair_df = pd.DataFrame()
-
         for i, row in self.sic_code().iterrows():
-            sic_code = row.to_dict().get('sic_code')
-            industry_title = row.to_dict().get('industry_title')
-            industry_tickers = all_ticker_info[all_ticker_info.sic_code == sic_code].ticker.to_list()
+            sic_code = row.sic_code
+            industry_title = row.industry_title
+
+            industry_tickers = self.all_ticker_info[self.all_ticker_info['sic_code'] == sic_code]['ticker'].to_list()
             if len(industry_tickers) < 3:
                 continue
-
-
-            # print(t)
-            # print()
-            t_ = t.intersection(industry_tickers)
-            for pair in list(itertools.combinations(t_, 2)):
+ 
+            for A, B in list(itertools.combinations(tickers.intersection(industry_tickers), 2)):
                 columns = ['A', 'B', 'ratio', 'industry_title', 'rank']
                 values = [
-                    pair[0],
-                    pair[1],
-                    ((market_data[pair[0]] - market_data[pair[1]]).abs()).mean(),
+                    A,
+                    B,
+                    (market_data[A] - market_data[B]).abs().mean(),
                     industry_title,
                     1
                 ]
