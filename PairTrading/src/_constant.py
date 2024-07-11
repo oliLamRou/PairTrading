@@ -2,6 +2,66 @@ from PairTrading.src.utils import PROJECT_ROOT
 
 CONFIG = (PROJECT_ROOT / '.config.ini').resolve()
 
+TRADES_COLUMNS = {
+    'Symbol': ['ticker', 'TEXT'],
+    'Date/Time': ['date', 'TEXT'],
+    'Quantity': ['quantity', 'INTERGER'],
+    'T.Price': ['price', 'REAL'],
+    'C.Price': ['close', 'REAL'],
+    'Proceeds': ['proceeds', 'REAL'],
+    'Comm/Fee': ['fees', 'REAL'],
+    'Basic': ['basis', 'REAL'],
+    'Realized P/L': ['pnl', 'REAL'],
+    'MTM P/L': ['mtm_pnl', 'REAL'],
+    'Code': ['code', 'TEXT'],
+}
+
+#This can be use for single stock or pair I guess ?
+WATCHLIST_COLUMNS = {
+    'pair': ['pair', 'TEXT'],
+    'A': ['A', 'TEXT'],
+    'B': ['B', 'TEXT'],
+    'watchlist': ['watchlist', 'TEXT'],
+    'notes': ['notes', 'TEXT']
+}
+PAIR_INFO_COLUMNS = {
+    'pair': ['pair', 'TEXT'],
+    'A': ['A', 'TEXT'],
+    'B': ['B', 'TEXT'],
+    'reverse': ['reverse', 'INTERGER'],  
+    'watchlist': ['watchlist', 'INTERGER'],
+    'hedge_ratio': ['hedge_ratio', 'REAL'],
+    'notes': ['notes', 'TEXT']
+}
+
+TICKER_RANK_COLUMNS = {
+    'ticker': ['ticker', 'TEXT'],
+    'rank': ['rank', 'INTERGER']
+}
+
+FAILED_TICKER_COLUMNS = {
+    'ticker': ['ticker', 'TEXT'],
+    'reformat': ['reformat', 'TEXT'],
+}
+
+MARKET_DATA_COLUMNS = {
+    'ticker': ['ticker', 'TEXT'],
+    'timespan': ['timespan', 'TEXT'],
+    'Date': ['date', 'TEXT'],
+    'Open': ['open', 'REAL'],
+    'High': ['high', 'REAL'],
+    'Low': ['low', 'REAL'],
+    'Close': ['close', 'REAL'],
+    'Adj Close': ['adj_close', 'REAL'],
+    'Volume': ['volume', 'INTERGER'],
+}
+
+SIC_CODE_COLUMNS = {
+    'sic_code': 'INTERGER',
+    'office': 'TEXT',
+    'industry_title': 'TEXT' 
+}
+
 GROUPED_DAILY_COLUMNS = {
     'T': ['ticker', 'TEXT'], 
     'v': ['volume', 'INTERGER'], 

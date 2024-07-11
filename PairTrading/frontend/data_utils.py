@@ -1,42 +1,53 @@
 from PairTrading.backend.polygon import Polygon
+from PairTrading.backend.data_wrangler import DataWrangler
 import pandas as pd
+from datetime import date
 
 class DataUtils():
-    def __init__(self):
-        self.p = Polygon()
+    @staticmethod
+    def list_watchlist() -> list:
+        watchlist = DataWrangler()._UserWrangler__user_db.get_table('watchlist')
+        return watchlist.watchlist.to_list()
+
+    @staticmethod
+    def get_position(tickers: list) -> float:
+        pass
+
+    @staticmethod
+    def get_average(ticker: str, column_name: str, period=30) -> float:
+        return DataWrangler().market_data([ticker])[column_name].rolling(period).mean().to_list()[-1]
     
-    def get_ticker_details(self, ticker=""):
-        df = self.p.get_table(f"day_{ticker}")
-        return df
+    @staticmethod
+    def get_average_volume(ticker: str, period=30) -> float:
+        return DataWrangler().market_data([ticker]).volume.rolling(period).mean().to_list()[-1]
     
-    def get_ticker_data(self, ticker, data=""):
-        return []
+    @staticmethod
+    def get_last_price(ticker, period="day") -> float:
+        #NOTE: Should we cut today directly in datawrangler?
+        today = pd.to_datetime(date.today())
+        df = DataWrangler().market_data([ticker])
+        df = df[(df.date != today)]
+        return df[df.date == df.date.max()].close.iloc[0]
     
-    def get_average_volume(self, ticker="", period=30):
-        v = self.get_ticker_details(ticker).volume[-period:].mean()
-        return v
+    @staticmethod
+    def normalize_max(data: pd.Series()) -> pd.Series():
+        return data / data.max()
     
-    def get_last_price(self, ticker="", period="day"):
-        v = self.get_ticker_details(ticker).close[-1:].iloc[0]
-        return v
+    @staticmethod
+    def normalize_minmax(data: pd.Series()) -> pd.Series():
+        return (data - data.min()) / (data.max() - data.min())
     
-    def normalize_max(self, df, column=""):
-        ddf = df.copy()
-        ddf[column] = df[column] / df[column].max()
-        return ddf
-    
-    def normalize_minmax(self, df, column=""):
-        ddf = df.copy()
-        ddf[column] = (df[column] - df[column].min()) / (df[column].max() - df[column].min())
-        return ddf
+    @staticmethod
+    def format_large_number(num):
+        suffixes = ['', 'K', 'M', 'B', 'T']
+        magnitude = 0
+
+        while abs(num) >= 1000 and magnitude < len(suffixes) - 1:
+            magnitude += 1
+            num /= 1000.0
+
+        formatted_num = f"{num:.1f}{suffixes[magnitude]}"
+        return formatted_num
         
 if __name__ == '__main__':
-    d = DataUtils()
-    #print(d.p.grouped_daily("day_AA"))
-    df = d.p.get_table("day_AA")
-    nrm = d.normalize_max(df, "close")
-    print(nrm)
-    print(d.normalize_minmax(df, "close"))
-
-    #print(d.get_average_volume("AA", 30))
-    #print(d.get_last_price("AA"))
+    print(DataUtils.get_last_price('wec'))

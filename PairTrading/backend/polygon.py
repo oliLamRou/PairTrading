@@ -2,16 +2,15 @@ from datetime import timedelta
 import configparser
 
 import pandas as pd
+import requests
+import warnings
 
-from PairTrading.backend.market_data import MarketData
 from PairTrading.src import _constant
 from PairTrading.src.utils import PROJECT_ROOT
 
-class Polygon(MarketData):
+class Polygon:
     BASE_URL = 'https://api.polygon.io/'
     def __init__(self):
-        super().__init__(self.BASE_URL)
-
         #API_KEY
         self.config = configparser.ConfigParser()
         self.config.read(_constant.CONFIG)
@@ -19,21 +18,60 @@ class Polygon(MarketData):
 
         #Date 
         self.today = pd.Timestamp.now(tz='US/Eastern')
-        self._previous_day = None
+        self._last_close_date = None
 
     @property
-    def previous_day(self):
+    def last_close_date(self):
         """
         Getting APPL stock previous close day as a reference
         """
-        if self._previous_day == None:
+        if self._last_close_date == None:
             url = f'v2/aggs/ticker/AAPL/prev?adjusted=true&apiKey={self.key}'
-            results, status_code = self.requests_results(url)
+            results = requests.get(self.BASE_URL + url).json().get('results')
             timestamp = results[0].get('t')
-            self._previous_day = pd.Timestamp(timestamp, unit='ms').strftime('%Y-%m-%d')
+            self._last_close_date = pd.Timestamp(timestamp, unit='ms').strftime('%Y-%m-%d')
 
-        return self._previous_day
+        return self._last_close_date
 
+    def format_results(self,
+            row: dict, 
+            columns: dict
+        ) -> dict:
+
+        results_ = {}
+        for k, v in row.items():
+            column = columns.get(k)
+            if not column:
+                print(f'Column: {k} does exist in _constant.\n')
+                continue
+
+            column_name = column[0]
+            column_type = column[1]
+            if column_type == 'INTERGER':
+                results_[column_name] = int(v)
+            elif column_type == 'REAL':
+                results_[column_name] = float(v)
+            else:
+                results_[column_name] = str(v)
+
+        return results_
+
+    def requests_and_format(self, url: str, columns):
+        r = requests.get(self.BASE_URL + url)
+        if not r.status_code == 200:
+            warnings.warn(message=f'Requests code: {r.status_code}', category=Warning, stacklevel=2)
+            return
+
+        results = r.json().get('results')
+        if not results:
+            return
+
+        print(f'Request for ({url}) successful')
+        if type(results) == list:
+            return [self.format_results(result, columns) for result in results]
+        
+        return self.format_results(results, columns)
+    
     def aggregates(self, ticker: str, n_days: int = 300, timespan: str = 'day') -> [dict]:
         end = self.today.strftime('%Y-%m-%d')
         start = (self.today - timedelta(days=n_days)).strftime('%Y-%m-%d')
@@ -42,7 +80,7 @@ class Polygon(MarketData):
         return self.requests_and_format(url, _constant.AGGREGATES_COLUMNS)
 
     def grouped_daily(self) -> [dict]:
-        url = f'v2/aggs/grouped/locale/us/market/stocks/{self.previous_day}?adjusted=true&apiKey={self.key}'
+        url = f'v2/aggs/grouped/locale/us/market/stocks/{self.last_close_date}?adjusted=true&apiKey={self.key}'
         return self.requests_and_format(url, _constant.GROUPED_DAILY_COLUMNS)
 
     def ticker_types(self, asset_class: str = 'stocks', locale: str = 'us') -> [dict]:
@@ -55,5 +93,4 @@ class Polygon(MarketData):
 
 if __name__ == '__main__':
     p = Polygon()
-    x = p.previous_day
-    print(x)
+    print(p.grouped_daily())
