@@ -6,7 +6,7 @@ dependencies:
   - pandas
   - pandas-ta
   - seaborn
-  - numpy
+  - numpy=1.26.4
   - sqlite
   - python=3.11
   - dash
