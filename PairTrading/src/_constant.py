@@ -3,7 +3,7 @@ from PairTrading.src.utils import PROJECT_ROOT
 CONFIG = (PROJECT_ROOT / '.config.ini').resolve()
 
 #DB
-YFINANCE_COLUMNS = {
+YFINANCE_MARKET_DATA_COLUMNS = {
     'ticker': ['ticker', 'TEXT'],
     'timespan': ['timespan', 'TEXT'],
     'Date': ['date', 'TEXT'],

@@ -102,7 +102,7 @@ if __name__ == '__main__':
     from PairTrading.src import _constant
     db = DataBase('../../data/polygon.db')
 
-    df = db.get_table('ticker_details')
-    print(df.ticker)
+    # df = db.get_table('ticker_detail')
+    print(db.list_tables())
 
 

@@ -79,15 +79,13 @@ class Scanner(DataWrangler):
         self.tickers = self.tickers.intersection(self.avg_volume_filter)
         return self.tickers
 
-
     def get_pairs(self) -> pd.DataFrame():
         tickers = self.filtered_tickers
         market_data = self.all_market_data.pivot(index='date', columns='ticker', values='close')
         market_data = (market_data - market_data.min()) / (market_data.max() - market_data.min())
-        print(len(self.all_ticker_info))
         
         pair_df = pd.DataFrame()
-        for i, row in self.sic_code().iterrows():
+        for i, row in self.sic_code.iterrows():
             sic_code = row.sic_code
             industry_title = row.industry_title
 
@@ -96,6 +94,7 @@ class Scanner(DataWrangler):
                 continue
  
             for A, B in list(itertools.combinations(tickers.intersection(industry_tickers), 2)):
+                #diff_avg
                 columns = ['A', 'B', 'ratio', 'industry_title', 'rank']
                 values = [
                     A, B,
@@ -118,7 +117,7 @@ class Scanner(DataWrangler):
                 df = self.ticker_info(ticker)
                 missing = set(tickers).difference(set(self._DataWrangler__polygon_db.get_table('ticker_details').ticker.to_list()))
                 print(f'-> {len(missing)} to download\n')
-                time.sleep(15)
+                time.sleep(13)
 
             # df = self.market_data(ticker)
             # if df.empty:
@@ -130,6 +129,13 @@ if __name__ == '__main__':
     s.min_price = 10
     s.max_price = 40
     s.min_vol = 1000000
+    #Get ticker for x industry
+    #Pre filter price range and 1 day volume
+    #Get list of ticker that need an update
+    #Download batch from yahoo finance
+    #create avg diff
+    #filter by avg diff
+        #
     pair = s.get_pairs()
     pair = pair[pair['ratio'] < 0.15]
     print(pair.industry_title.value_counts())
