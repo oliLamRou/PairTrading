@@ -51,12 +51,16 @@ class DataBase:
         return pd.read_sql_query(f"PRAGMA table_info({table_name})", self.conn)['name']
 
     #WRITE
+    @property
+    def _commit(self):
+        self.conn.commit()
+    
+    def _vacuum(self):
+        self.conn.execute("VACUUM")
+
     def setup_table(self, table_name: str, columns: dict):
         self.create_table(table_name)
         self.add_columns(table_name, columns)
-
-    def _drop_table(self, table_name: str):
-        self.cursor.execute(f'DROP TABLE {table_name}')
 
     def clear_table(self, table_name: str):
         self.cursor.execute(f'DELETE FROM {table_name}')
@@ -75,14 +79,11 @@ class DataBase:
             print(f'Adding {column_name} of type: {column_type} in table: {table_name}')
             self.cursor.execute(f'''ALTER TABLE {table_name} ADD {column_name} {column_type}''')
         
-        self.conn.commit()
-        
     def add_row(self, table_name: str, row: dict):
         columns = ', '.join(str(key) for key in row.keys())
         values = tuple(row.values())
         placeholders = ', '.join('?' for _ in values)
         self.cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})", values)
-        self.conn.commit()
 
     def update_row(self, table_name: str, row: dict, column_name: str, column_value):
         columns = '=?, '.join(row.keys()) + '=?'
@@ -90,10 +91,18 @@ class DataBase:
         values.append(column_value)
         self.cursor.execute(f'''UPDATE {table_name} SET {columns} WHERE {column_name} = ? ''', tuple(values))
 
-    def _delete_row(self, table_name: str, column_name: str, column_value):
+    #DELETE
+    def _drop_table(self, table_name: str):
+        self.cursor.execute(f'DROP TABLE {table_name}')
+
+    def _delete_rows(self, table_name: str, column_name: str, column_value):
         self.cursor.execute(f'''DELETE FROM {table_name} WHERE {column_name} = ? ''', (column_value, ))
-        self.conn.commit()
 
 if __name__ == '__main__':
+    from PairTrading.src import _constant
     db = DataBase('../../data/polygon.db')
+
+    # df = db.get_table('ticker_detail')
+    print(db.list_tables())
+
 

@@ -2,6 +2,40 @@ from PairTrading.src.utils import PROJECT_ROOT
 
 CONFIG = (PROJECT_ROOT / '.config.ini').resolve()
 
+#DB
+YFINANCE_MARKET_DATA_COLUMNS = {
+    'ticker': ['ticker', 'TEXT'],
+    'timespan': ['timespan', 'TEXT'],
+    'Date': ['date', 'TEXT'],
+    'Open': ['open', 'REAL'],
+    'High': ['high', 'REAL'],
+    'Low': ['low', 'REAL'],
+    'Close': ['close', 'REAL'],
+    'Adj Close': ['adj_close', 'REAL'],
+    'Volume': ['volume', 'INTERGER'],
+}
+
+MARKET_DATA_COLUMNS = {
+    'ticker': 'TEXT',
+    'timespan': 'TEXT',
+    'close': 'REAL',
+    'high': 'REAL',
+    'low': 'REAL',
+    'n_transaction': 'INTERGER',
+    'open': 'REAL',
+    'timestamp': 'INTERGER',
+    'volume': 'INTERGER',
+    'volume_weighted': 'REAL',
+    'otc': 'INTERGER',
+}
+
+SIC_CODE_COLUMNS = {
+    'sic_code': 'INTERGER',
+    'office': 'TEXT',
+    'industry_title': 'TEXT' 
+}
+
+#POLYGON
 GROUPED_DAILY_COLUMNS = {
     'T': ['ticker', 'TEXT'], 
     'v': ['volume', 'INTERGER'], 
