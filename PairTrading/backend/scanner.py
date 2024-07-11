@@ -5,6 +5,7 @@ from PairTrading.backend.data_wrangler import DataWrangler
 import math
 import matplotlib.pyplot as plt
 import itertools
+import yfinance as yf
 
 class Scanner(DataWrangler):
     """
@@ -55,14 +56,15 @@ class Scanner(DataWrangler):
 
     #Snapshot filter
     @property
-    def snapshot_filter(self) -> list:
+    def snapshot_filter(self) -> set:
         market_snapshot_df = self.market_snapshot()
-        return market_snapshot_df[
+        df = market_snapshot_df[
             (market_snapshot_df.close >= self.min_price) &
             (market_snapshot_df.close <= self.max_price) & 
             (market_snapshot_df.volume >= self.min_vol) & 
             (market_snapshot_df.volume <= self.max_vol)
         ]['ticker'].to_list()
+        return set(df)
 
     @property
     def avg_volume_filter(self) -> list:
@@ -112,6 +114,7 @@ class Scanner(DataWrangler):
         self.min_vol = 100
         tickers = self.snapshot_filter
         for ticker in tickers:
+            print(ticker)
             if not self._DataWrangler__polygon_db.has_value('ticker_details', 'ticker', ticker):
                 print(f'/// Doing {ticker}')
                 df = self.ticker_info(ticker)
@@ -125,17 +128,22 @@ class Scanner(DataWrangler):
             #     time.sleep(15)
 
 if __name__ == '__main__':
-    s = Scanner()
-    s.min_price = 10
-    s.max_price = 40
-    s.min_vol = 1000000
     #Get ticker for x industry
     #Pre filter price range and 1 day volume
     #Get list of ticker that need an update
     #Download batch from yahoo finance
     #create avg diff
     #filter by avg diff
-        #
-    pair = s.get_pairs()
-    pair = pair[pair['ratio'] < 0.15]
-    print(pair.industry_title.value_counts())
+    
+    s = Scanner()
+    s.min_price = 10
+    s.max_price = 50
+    s.min_vol = 10000
+    industry = 'STATE COMMERCIAL BANKS'
+    tickers = s.all_ticker_info[s.all_ticker_info.sic_code == 6022].reset_index(drop=True).ticker.to_list()
+    tickers_ = s.snapshot_filter.intersection(tickers)
+
+    print(tickers)
+    print(tickers_)
+    data = yf.download(tickers_, period="5d")
+    print(data)

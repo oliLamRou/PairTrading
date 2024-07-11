@@ -16,7 +16,7 @@ from PairTrading.src.utils import PROJECT_ROOT
 #DATA HANDLER
 class DataWrangler(DataBase, Polygon):
     POLYGON_DB = (PROJECT_ROOT / 'data' / 'polygon.db').resolve()
-    YFINANCE_DB = (PROJECT_ROOT / 'data' / 'yfinance.db').resolve()
+    YFINANCE_DB = (PROJECT_ROOT / 'data' / 'market_data' / 'yfinance.db').resolve()
 
     TICKER_INFO_TABLE_NAME = 'ticker_details'
     MARKET_DATA_TABLE_NAME = 'market_data'
@@ -38,6 +38,9 @@ class DataWrangler(DataBase, Polygon):
 
         self.setup_polygon()
         self.setup_yfinance()
+
+    def setup_user(self):
+        pass
 
     def setup_yfinance(self):
         #market_data
@@ -188,8 +191,6 @@ class DataWrangler(DataBase, Polygon):
 
 if __name__ == '__main__':
     dw = DataWrangler()
-    from pprint import pprint
-    pprint(dw.sic_code.industry_title.sort_values().to_list())
     # dw.y_market_data()
 
 

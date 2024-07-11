@@ -27,3 +27,10 @@ import pandas_ta
 # pprint(x)
 
 # print(help(yf.download))
+
+#Get ticker for x industry
+#Pre filter price range and 1 day volume
+#Get list of ticker that need an update
+#Download batch from yahoo finance
+#create avg diff
+#filter by avg diff
