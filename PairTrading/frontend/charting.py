@@ -131,7 +131,7 @@ class DashChart:
         return layoutElements
     
     def chart_candlestick_callback(self, value):
-        bbands = self.calculate_bollinger_bands(20, 2)
+        bbands = self.calculate_bollinger_bands(17, 3)
 
         figures = [
                     go.Candlestick(

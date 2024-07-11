@@ -8,32 +8,29 @@ from dash import Dash, html, dcc, Input, Output
 import dash_bootstrap_components as dbc
 
 class ScannerView:
-    def __init__(self, market_data) -> None:
-        print("begin init")
+    def __init__(self, scanner) -> None:
         self.callback_app = None
-        self.market_data = market_data
         self.pairs_df = None
-        self.scanner = Scanner()
-        self.scanner.min_price = 2
-        self.scanner.max_price = 200
-        self.scanner.min_vol = 100000
-        self.market_data = self.scanner.all_market_data
+        self.max_avg_diff = 0.15
+        self.scanner = scanner
         self.update_pairs()
 
         #Preload chart objects
         self.compare_charts = []
-        for i in range(400):
+        for i in range(200):
             self.comparechart = DashChart(f"tempcompare-scannerview{i}", "compare")
             self.compare_charts.append(self.comparechart)
 
         self.sector_dropdown = [{"label": "All", "value": 1 }]
+        self.industry_list = []
         self.industry_dropdown = self.sector_dropdown
 
         #Get all industries
         for i, s in enumerate(self.pairs_df.industry_title.sort_values().unique()):
-            self.industry_dropdown.append({"label": s, "value": i+2})
+            count = self.pairs_df.industry_title.value_counts().get(s, 0)
+            self.industry_list.append(s)
+            self.industry_dropdown.append({"label": f"({count}) {s}", "value": i+2})
 
-        print("end init")
 
     def set_callback_app(self, app):
         print("set callback app")
@@ -47,13 +44,27 @@ class ScannerView:
                 Input("minprice", "value"),
                 Input("maxprice", "value"),
                 Input("industry-select", "value"),
+                Input("max-avgdiff", "value"),
             ],
         )
-        def apply_filter_callback(minprice, maxprice, industry):
+        def apply_filter_callback(minprice, maxprice, industry, max_avg_diff):
             if minprice and maxprice and industry:
-                print(self.industry_dropdown[int(industry)-1]["label"])
-                return self.filter_pairs(self.industry_dropdown[int(industry)-1]["label"])
+                self.max_avg_diff = max_avg_diff
+                return self.filter_pairs(self.industry_list[int(industry)-2])
 
+        """ @app.callback(
+            Output("page-content", "children"),
+            [
+                #Input("pagination", "active_page"),
+                Input("minprice", "value"),
+                Input("maxprice", "value"),
+                Input("industry-select", "value"),
+                Input("max-avgdiff", "value"),
+            ],
+        )
+        def apply_filter_callback(minprice, maxprice, industry, max_avg_diff):
+            print("popover") """
+            
     def update_pairs(self):
         self.pairs_df = self.scanner.get_pairs()
 
@@ -64,7 +75,8 @@ class ScannerView:
                 dbc.CardBody([
                     dbc.InputGroup([dbc.InputGroupText("Min Price"), dbc.Input(id="minprice", type="number", value=2)]),
                     dbc.InputGroup([dbc.InputGroupText("Max Price"), dbc.Input(id="maxprice", type="number", value=10)]),
-                    dbc.InputGroup([dbc.InputGroupText("Sector"), dbc.Select(id="industry-select", options = self.sector_dropdown, value="All")])
+                    dbc.InputGroup([dbc.InputGroupText("Sector"), dbc.Select(id="industry-select", options = self.sector_dropdown, value="All")]),
+                    dbc.InputGroup([dbc.InputGroupText("Max Average Difference"), dbc.Input(id="max-avgdiff", type="number", value=self.max_avg_diff)])
                 ])
             ])
         ])
@@ -72,13 +84,10 @@ class ScannerView:
         return [scanner_settings, html.Div(id="result-content"), html.Div(id="page-content")]
 
     def filter_pairs(self, industry):
-        print("Filter Pairs")
-
         chart_counter = 0
         layout_elements = []
         
-        filtered_pairs_df = self.pairs_df[(self.pairs_df.ratio <= 0.12) & (self.pairs_df.industry_title == industry)].reset_index(drop=True).sort_values(by=("ratio"), ascending=False)
-        print(self.pairs_df)
+        filtered_pairs_df = self.pairs_df[(self.pairs_df.ratio <= self.max_avg_diff) & (self.pairs_df.industry_title == industry)].reset_index(drop=True).sort_values(by=("ratio"), ascending=True).reset_index()
 
         i = 0
         max_tickers = 50
@@ -87,13 +96,11 @@ class ScannerView:
             ticker_b = row.B
             ratio = row.ratio
 
-            print(ticker_a, ticker_b, ratio)
-
             tickera_df = self.scanner.all_market_data[self.scanner.all_market_data.ticker == ticker_a]
             tickerb_df = self.scanner.all_market_data[self.scanner.all_market_data.ticker == ticker_b]
 
-            if tickera_df.empty or ticker_a.find(".") >= 0 or ticker_b.find(".") >=0:
-                continue
+            #if tickera_df.empty or ticker_a.find(".") >= 0 or ticker_b.find(".") >=0:
+            #    continue
 
             i += 1
             if i > max_tickers:
@@ -101,35 +108,48 @@ class ScannerView:
         
             chart = self.compare_charts[chart_counter]
             chart.chartType = "compare"
-            chart.label = f"{ticker_a} - {ticker_b} - {ratio}"
+            chart.label = f"{i}. {ticker_a} - {ticker_b} - {ratio}"
             chart.data = tickera_df
             chart.compareData = tickerb_df
             chart_counter += 1
 
-            ChartCard = [
+            chart_card = chart.get_layout()
+            detail_card = dbc.Card([
+                dbc.CardBody("Details"),
+                #dbc.Button("Click Me", id="pair-view-target", color="primary")
+            ])
+
+            pair_view_pop = dbc.Popover(
+                "Pair View",
+                target="pair-view-target",
+                hide_arrow=True,
+                body=True,
+            )
+
+            pair_card = dbc.Card([
                 dbc.CardBody([
                     dbc.Row([
-                        dbc.Col(chart.get_layout(),width=6),
+                        dbc.Col(chart_card, width=6),
+                        dbc.Col(detail_card, width=3),
                     ])
-                ])                
-            ]
+                ]),
+                pair_view_pop               
+            ])
 
-            chartCard = dbc.Card(
-                ChartCard
-            )  
-            
-            layout_elements.append(chartCard)
+            layout_elements.append(pair_card)
 
         return layout_elements
 
 if __name__ == '__main__':
     print("ui_scannerview")
-
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-    #dw = DataWrangler()
-   
-    scanner_view = ScannerView(market_data=None)
+    scanner=Scanner()
+    scanner.min_price = 2
+    scanner.max_price = 200
+    scanner.min_vol = 100000
+    
+    scanner_view = ScannerView(scanner)
     scanner_view.set_callback_app(app)
 
     app.layout = html.Div(

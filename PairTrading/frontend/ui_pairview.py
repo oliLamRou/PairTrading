@@ -7,9 +7,10 @@ from dash import Dash, html, dcc, Input, Output
 import dash_bootstrap_components as dbc  
 
 class PairView:
-    def __init__(self, ticker_a, ticker_b, diff_average=1):
+    def __init__(self, ticker_a, ticker_b, diff_average=1, ratio=1):
         self.ticker_a = ticker_a
         self.ticker_b = ticker_b
+        self.ratio = 0.61
         self.diff_average = diff_average
         self.market_data = None
         self.callback_app = None
@@ -27,7 +28,7 @@ class PairView:
         ddf = pd.DataFrame()
 
         ddf['date'] = df_a.index
-        ddf['close'] = df_a.close - df_b.close * self.diff_average
+        ddf['close'] = df_a.close - df_b.close * self.ratio
         
         #Pair Price Chart
         chart_pairPrice = DashChart("price chart", "candlestick")
@@ -68,7 +69,8 @@ class PairView:
 
         #pair view card
         chart_card = [
-            dbc.CardHeader(html.H3(f"{self.ticker_a}-{self.ticker_b} Pair", className="card-title")),
+            #dbc.CardHeader(html.H3(f"{self.ticker_a}-{self.ticker_b} Pair", className="card-title")),
+            dbc.CardHeader(html.H3(dbc.InputGroup([dbc.InputGroupText("Tickers: "), dbc.Input(id="pair-tickers", type="text", value="LNT, WEC")]))),
             dbc.CardBody([
                 dbc.Row([
                     #charts
@@ -96,13 +98,12 @@ class PairView:
 
 if __name__ == '__main__':
     print("ui_pairview")
-
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
     dw = DataWrangler()
     df = dw.all_market_data
-    
-    pair_view = PairView("MTDR", "OVV")
+
+    pair_view = PairView("LNT", "WEC")
     pair_view.market_data = df
     pair_view.set_callback_app(app)
 
@@ -110,4 +111,4 @@ if __name__ == '__main__':
         pair_view.get_layout()
     )
 
-    app.run_server(debug=True)
+    app.run_server(debug=True, port=8060)
