@@ -1,4 +1,8 @@
 # PairTrading
 
 ### Backend
-- crontab test
+- database
+- polygon
+- market_data #NOTE: need to rename this
+- data_wrangler
+- scanner
