@@ -3,8 +3,8 @@ from PairTrading.src.utils import PROJECT_ROOT
 CONFIG = (PROJECT_ROOT / '.config.ini').resolve()
 
 TICKER_RANK_COLUMNS = {
-    'ticker': 'TEXT',
-    'rank': 'INTERGER'    
+    'ticker': ['ticker', 'TEXT'],
+    'rank': ['rank', 'INTERGER']    
 }
 
 FAILED_TICKER_COLUMNS = {
