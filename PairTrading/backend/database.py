@@ -33,15 +33,13 @@ class DataBase:
         )
         return False if query.empty else True
 
-    def get_rows(self, table_name, column_name, value) -> pd.DataFrame():
-        return pd.read_sql_query(
-            f"SELECT * FROM {table_name} WHERE {column_name} = ?", 
-            self.conn, 
-            params=(value,)
-        )
+    def get_rows(self, table_name: str, column_name: str, values: list) -> pd.DataFrame():
+        values = "'" + "', '".join(values) + "'"
+        query = f"SELECT * FROM {table_name} WHERE {column_name} IN ({values})"
+        return pd.read_sql_query(query, self.conn)
 
     def has_value(self, table_name, column_name, value) -> bool:
-        query = self.get_rows(table_name, column_name, value)
+        query = self.get_rows(table_name, column_name, [value])
         return False if query.empty else True
 
     def get_table(self, table_name: str) -> pd.DataFrame():
@@ -95,14 +93,15 @@ class DataBase:
     def _drop_table(self, table_name: str):
         self.cursor.execute(f'DROP TABLE {table_name}')
 
-    def _delete_rows(self, table_name: str, column_name: str, column_value):
-        self.cursor.execute(f'''DELETE FROM {table_name} WHERE {column_name} = ? ''', (column_value, ))
+    def _delete_rows(self, table_name: str, column_name: str, values: list):
+        values = "'" + "', '".join(values) + "'"
+        self.cursor.execute(f'DELETE FROM {table_name} WHERE {column_name} IN ({values})')
 
 if __name__ == '__main__':
     from PairTrading.src import _constant
     db = DataBase('../../data/polygon.db')
 
     # df = db.get_table('ticker_detail')
-    print(db.list_tables())
+    print(db.get_rows('market_data', 'ticker', ['MSTR', 'AA']))
 
 

@@ -6,7 +6,7 @@ import warnings
 
 import pandas as pd
 import requests
-import yfinance
+import yfinance as yf
 
 from PairTrading.backend.database import DataBase
 from PairTrading.backend.polygon import Polygon
@@ -16,10 +16,11 @@ from PairTrading.src.utils import PROJECT_ROOT
 #DATA HANDLER
 class DataWrangler(DataBase, Polygon):
     POLYGON_DB = (PROJECT_ROOT / 'data' / 'polygon.db').resolve()
-    YFINANCE_DB = (PROJECT_ROOT / 'data' / 'yfinance.db').resolve()
+    YFINANCE_DB = (PROJECT_ROOT / 'data' / 'market_data' / 'yfinance.db').resolve()
 
     TICKER_INFO_TABLE_NAME = 'ticker_details'
     MARKET_DATA_TABLE_NAME = 'market_data'
+    FAILED_TICKER_TABLE_NAME = 'failed_ticker'
     MARKET_SNAPSHOT_TABLE_NAME = 'grouped_daily'
     SIC_CODE_TABLE_NAME = 'sic_code'
     TICKER_TYPES_TABLE_NAME = 'ticker_types'
@@ -39,20 +40,22 @@ class DataWrangler(DataBase, Polygon):
         self.setup_polygon()
         self.setup_yfinance()
 
+    def setup_user(self):
+        pass
+
     def setup_yfinance(self):
         #market_data
-        self.__polygon_db.setup_table(
-            self.MARKET_DATA_TABLE_NAME,
-            self._renamed_columns(_constant.YFINANCE_MARKET_DATA_COLUMNS)
-        )
-
-    def setup_polygon(self):
-        #market_data
-        self.__polygon_db.setup_table(
+        self.__yfinance_db.setup_table(
             self.MARKET_DATA_TABLE_NAME,
             self._renamed_columns(_constant.MARKET_DATA_COLUMNS)
         )
 
+        self.__yfinance_db.setup_table(
+            self.FAILED_TICKER_TABLE_NAME,
+            self._renamed_columns(_constant.FAILED_TICKER_COLUMNS)
+        )
+
+    def setup_polygon(self):
         #ticker_details
         self.__polygon_db.setup_table(
             self.TICKER_INFO_TABLE_NAME,
@@ -120,10 +123,13 @@ class DataWrangler(DataBase, Polygon):
             update: bool = False
         ) -> pd.DataFrame():
 
-        if not self.__polygon_db.has_value(self.TICKER_INFO_TABLE_NAME, 'ticker', ticker) or update:
+        if not self.__polygon_db.has_value(
+                self.TICKER_INFO_TABLE_NAME, 'ticker', ticker
+                ) or update:
+
             results = self.ticker_details(ticker)
 
-            print(f'{self.TICKER_INFO_TABLE_NAME} --> ("Updating" if update else "Adding"): {" ".join(str(r) for r in results.values())[:60]} ...\n')
+            print(f'{self.TICKER_INFO_TABLE_NAME} --> {"Updating" if update else "Adding"}: {" ".join(str(r) for r in results.values())[:60]} ...\n')
             if update:
                 self.__polygon_db.update_row(self.TICKER_INFO_TABLE_NAME, results, 'ticker', ticker)
             else:
@@ -136,60 +142,86 @@ class DataWrangler(DataBase, Polygon):
 
         return self.all_ticker_info[self.all_ticker_info.ticker == ticker]
 
-    def market_data(self,
-            ticker: str,
-            timespan: str = 'day',
-            n_days: int = 300,
-            update: bool = False
-        ) -> pd.DataFrame():
-        #NOTE: ticker has a list. [] = all, [ticker, ...]
+    #Yahoo Finance
+    def write_market_data(self, df):
+        for i, row in df.iterrows():
+            row = row.to_dict()
+            self.__yfinance_db.add_row(self.MARKET_DATA_TABLE_NAME, row)
 
-        table_name = self.MARKET_DATA_TABLE_NAME
-        if update:
-            self.__polygon_db._delete_rows(table_name, 'ticker', ticker)
-            results = self.aggregates(ticker)
-            print(f"{table_name} --> Clearing and downloading rows for {ticker}")
-            for result in results:
-                result['ticker'] = ticker
-                result['timespan'] = 'd'
-                self.__polygon_db.add_row(table_name, result)
+    def format_ticker(self, df, ticker, timespan):
+        ticker_df = df.reset_index().copy()
 
-            print(f'Last row: {result}\n')
-            self.__polygon_db._commit
+        if isinstance(df.columns, pd.MultiIndex):
+            if not ticker in ticker_df.columns.get_level_values(1).unique():
+                return pd.DataFrame()
 
-        df = self.__polygon_db.get_table(table_name)
-        #NOTE: return from a list of ticker
-        return df[(df.ticker == ticker) & (df.timespan == 'd')]
+            ticker_df = df.loc[:, pd.IndexSlice[:, ticker]].reset_index()
+            ticker_df.columns = ticker_df.columns.get_level_values(0)
 
-    def y_market_data(self):
-        path = '../../data/yfinance'
-        self.__yfinance_db.setup_table(
-            'market_data',
-            self._renamed_columns(_constant.YFINANCE_COLUMNS)
-        )
-        for file in os.listdir(path):
-            if file == '.DS_Store':
+        ticker_df.rename(columns={k: v[0] for k, v in _constant.MARKET_DATA_COLUMNS.items()}, inplace=True)
+        ticker_df['ticker'] = ticker
+        ticker_df['timespan'] = timespan
+        ticker_df['date'] = ticker_df['date'].dt.strftime('%Y-%m-%d')
+        return ticker_df
+
+    def manage_wrong_tickers(self, tickers):
+        #Manage Failed tickers
+        downloaded_tickers = self.__yfinance_db.get_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', tickers).ticker.unique()
+        failed_to_download = set(tickers).difference(downloaded_tickers)
+
+        for ticker in failed_to_download:
+            if self.__yfinance_db.has_value(self.FAILED_TICKER_TABLE_NAME, 'ticker', ticker):
                 continue
 
-            ticker = file.replace('.csv', '')
-            print(ticker)
-            df = pd.read_csv(path + '/' + file)
-            self.__yfinance_db._delete_rows('market_data', 'ticker', ticker)
-            for i, row in df.iterrows():
-                row = row.to_dict()
-                row['ticker'] = ticker
-                row['timespan'] = 'd'
-                row = self.format_results(row, _constant.YFINANCE_COLUMNS)
-                self.__yfinance_db.add_row('market_data', row)
+            print(f'--> Adding {ticker} to {self.FAILED_TICKER_TABLE_NAME}')
+            self.__yfinance_db.add_row(self.FAILED_TICKER_TABLE_NAME, {'ticker': ticker})
 
         self.__yfinance_db._commit
-        print(self.__yfinance_db.get_table('market_data'))
 
+    def market_data(self,
+            tickers: list,
+            timespan: str = 'd',
+            period: str = '1y',
+            update: bool = False
+        ) -> pd.DataFrame():
+        
+        #When update skip this part so all tickers will be updated
+        to_download = tickers
+        if not update:
+            downloaded_tickers = self.__yfinance_db.get_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', tickers).ticker.unique()
+            to_download = set(tickers).difference(downloaded_tickers)
+            #Remove failed tickers
+            to_download = to_download.difference(self.__yfinance_db.get_rows(self.FAILED_TICKER_TABLE_NAME, 'ticker', tickers).ticker.unique())
+
+        #When to_download is empty there is nothing to update so return tickers
+        if not to_download:
+            return self.__yfinance_db.get_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
+
+        #Download data, if nothing downloaded mean all bad tickers.
+        print(f'--> Trying to download: {to_download}')
+        df = yf.download(to_download, period=period)
+        if df.empty:
+            self.manage_wrong_tickers(tickers)
+            return self.__yfinance_db.get_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
+
+        #Delete all rows with tickers in to_download
+        self.__yfinance_db._delete_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', to_download)
+        #Format and write in DB
+        for ticker in to_download:
+            ticker_df = self.format_ticker(df, ticker, timespan)
+            if ticker_df.empty:
+                continue
+        
+            self.write_market_data(ticker_df)
+
+        self.__yfinance_db._commit
+
+        self.manage_wrong_tickers(tickers)
+        return self.__yfinance_db.get_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
 
 if __name__ == '__main__':
     dw = DataWrangler()
-    from pprint import pprint
-    pprint(dw.sic_code.industry_title.sort_values().to_list())
-    # dw.y_market_data()
-
-
+    tickers = {'CFB', 'MCBC', 'USCB', 'ASB', 'WALpA', 'WTBA', 'FBNC', 'MVBF', 'FMNB', 'GBCI', 'HONE', 'BSRR', 'PEBO', 'FFIN', 'VBTX', 'FBP', 'CWBC', 'MNSB', 'CFG', 'BFST', 'CPF', 'CNOB', 'FIBK', 'STTpG', 'FITBI', 'IBCP', 'MTBpJ', 'TCBIO', 'CIVB', 'MOFG', 'TRST', 'GABC', 'BPRN', 'UBSI', 'MBCN', 'COLB', 'FITBO', 'FFNW', 'HOMB', 'CALB', 'CFGpH', 'EFSC', 'PPBI', 'CZNC', 'SBSI', 'BY', 'MSBI', 'LOB', 'BMRC', 'CVBF', 'NTRSO', 'BWFG', 'PCB', 'CCBG', 'FFIC', 'HBT', 'OBK', 'HTH', 'FITBP', 'INBK', 'MBINM', 'BCML', 'OVLY', 'UBCP', 'HMST', 'CCNE', 'CUBIpF', 'FITB', 'OFG', 'TCBK', 'FCCO', 'CFGpE', 'STBA', 'FRST', 'AUBpA', 'ORRF', 'EGBN'}
+    df = dw.market_data(tickers)
+    # df = dw._DataWrangler__yfinance_db.get_rows(dw.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
+    print(df)

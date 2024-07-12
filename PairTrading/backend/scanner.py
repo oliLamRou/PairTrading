@@ -1,15 +1,14 @@
 import time
 import pandas as pd
+from pandas import Timestamp
 import numpy as np
 from PairTrading.backend.data_wrangler import DataWrangler
 import math
 import matplotlib.pyplot as plt
 import itertools
+import yfinance as yf
 
 class Scanner(DataWrangler):
-    """
-    GOAL: scan and filter tickers for potential pair. NO CHART
-    """
     def __init__(self):
         super().__init__()
         self._pair_df = pd.DataFrame()
@@ -25,84 +24,59 @@ class Scanner(DataWrangler):
         self.max_vol = 1000000000000
 
         #Market Data
-        self.avg_length = 30
+        self.avg_vol_length = 30
         self.avg_vol = 1000000
 
         #Pair
-        self.avg_length_for_ratio = 90
+        self.avg_diff_length = 90
 
         self.tickers = set(self.all_ticker_info['ticker'].to_list())
         self.bad_tickers = []
 
     @property
-    def pair_df(self):
-        pass
-
-    #Sector
-    def _sic_code(self, sic: str, sic_type) -> list:
-        sic_code_df = self.sic_code()
-        codes = sic_code_df[sic_code_df[sic_type] == sic]['sic_code']
-        
-        return self.all_ticker_info[self.all_ticker_info.sic_code.isin(codes)].ticker.to_list()
-
-    @property
-    def sic_by_office(self) -> list:
-        return self._sic_code(self.office, 'office')
-
-    @property
-    def sic_by_industry(self) -> list:
-        return self._sic_code(self.industry, 'industry_title')
+    def sic(self) -> list:
+        if self.industry:
+            return self.sic_code[self.sic_code['industry_title'] == self.industry].sic_code.iloc[0]
+        else:
+            return self.sic_code[self.sic_code['office'] == self.office].sic_code.iloc[0]
 
     #Snapshot filter
     @property
-    def snapshot_filter(self) -> list:
+    def snapshot_filter(self) -> set:
         market_snapshot_df = self.market_snapshot()
-        return market_snapshot_df[
+        df = market_snapshot_df[
             (market_snapshot_df.close >= self.min_price) &
             (market_snapshot_df.close <= self.max_price) & 
             (market_snapshot_df.volume >= self.min_vol) & 
             (market_snapshot_df.volume <= self.max_vol)
         ]['ticker'].to_list()
+        return set(df)
 
     @property
-    def avg_volume_filter(self) -> list:
-        market_data_df = self.all_market_data.pivot(index='date', columns='ticker', values='volume')
-        tickers = market_data_df[-self.avg_length:].mean() > self.avg_vol
-        return tickers[tickers].index.to_list()
-
-    @property
-    def filtered_tickers(self) -> set():
-        #Price and Volume from a snapshot
-        self.tickers = self.tickers.intersection(self.snapshot_filter)
-
-        #avg volume
-        self.tickers = self.tickers.intersection(self.avg_volume_filter)
-        return self.tickers
-
     def get_pairs(self) -> pd.DataFrame():
-        tickers = self.filtered_tickers
-        market_data = self.all_market_data.pivot(index='date', columns='ticker', values='close')
-        market_data = (market_data - market_data.min()) / (market_data.max() - market_data.min())
-        
-        pair_df = pd.DataFrame()
-        for i, row in self.sic_code.iterrows():
-            sic_code = row.sic_code
-            industry_title = row.industry_title
+        sector_tickers = self.all_ticker_info[self.all_ticker_info.sic_code == self.sic].reset_index(drop=True).ticker.to_list()
+        snapshot_tickers = self.snapshot_filter.intersection(sector_tickers)
 
-            industry_tickers = self.all_ticker_info[self.all_ticker_info['sic_code'] == sic_code]['ticker'].to_list()
-            if len(industry_tickers) < 3:
-                continue
- 
-            for A, B in list(itertools.combinations(tickers.intersection(industry_tickers), 2)):
-                #diff_avg
-                columns = ['A', 'B', 'ratio', 'industry_title', 'rank']
-                values = [
-                    A, B,
-                    (market_data[A] - market_data[B]).abs().mean(),
-                    industry_title,
-                    1
-                ]
-                pair_df.loc[pair_df.size, columns] = values
+        market_data = self.market_data(snapshot_tickers)
+        tickers = market_data.ticker.unique()
+
+        close_data = market_data.pivot(index='date', columns='ticker', values='close')
+        close_data = close_data[-self.avg_diff_length:]
+        close_data = (close_data - close_data.min()) / (close_data.max() - close_data.min())
+
+        volume_data = market_data.pivot(index='date', columns='ticker', values='volume')
+        volume_data = volume_data[-self.avg_vol_length:]
+
+        pair_df = pd.DataFrame()
+        for A, B in list(itertools.combinations(tickers, 2)):
+            columns = ['A', 'B', 'A_avg_vol', 'B_avg_vol', 'avg_diff', 'rank']
+            values = [
+                A, B,
+                volume_data[A].mean().astype(int), volume_data[B].mean().astype(int),
+                (close_data[A] - close_data[B]).abs().mean().round(3),
+                1
+            ]
+            pair_df.loc[pair_df.size, columns] = values
 
         return pair_df.reset_index(drop=True)
 
@@ -118,24 +92,14 @@ class Scanner(DataWrangler):
                 missing = set(tickers).difference(set(self._DataWrangler__polygon_db.get_table('ticker_details').ticker.to_list()))
                 print(f'-> {len(missing)} to download\n')
                 time.sleep(13)
-
-            # df = self.market_data(ticker)
-            # if df.empty:
-            #     self.market_data(ticker, update=True)
-            #     time.sleep(15)
+            else:
+                print('DONE:', ticker)
 
 if __name__ == '__main__':
     s = Scanner()
     s.min_price = 10
-    s.max_price = 40
-    s.min_vol = 1000000
-    #Get ticker for x industry
-    #Pre filter price range and 1 day volume
-    #Get list of ticker that need an update
-    #Download batch from yahoo finance
-    #create avg diff
-    #filter by avg diff
-        #
-    pair = s.get_pairs()
-    pair = pair[pair['ratio'] < 0.15]
-    print(pair.industry_title.value_counts())
+    s.max_price = 200
+    s.min_vol = 10000
+    s.industry = 'STATE COMMERCIAL BANKS'
+    df = s.get_pairs
+    print(df)

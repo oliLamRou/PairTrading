@@ -1,4 +1,5 @@
 import requests
+import warnings
 
 class MarketData:
     def __init__(self, base_url):
