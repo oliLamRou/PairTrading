@@ -1,10 +1,12 @@
+#Pair Trading
+data/market_data/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 .config.ini
 .DS_Store
-data/market_data/
 
 # C extensions
 *.so
