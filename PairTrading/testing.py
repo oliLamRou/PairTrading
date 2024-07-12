@@ -34,3 +34,8 @@ import pandas_ta
 #Download batch from yahoo finance
 #create avg diff
 #filter by avg diff
+
+# x = "'" + "', '".join(['CFFI', 'SBSI', 'FBP', 'CVBF', 'RIV']) + "'"
+x = "'" + "', '".join(['CFFI']) + "'"
+print(x)
+#'AAPL', 'MSTR'
