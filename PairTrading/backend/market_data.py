@@ -16,6 +16,7 @@ class MarketData:
         status_code = r.status_code
         if not status_code == 200:
             warnings.warn(message=f'Requests code: {status_code}', category=Warning, stacklevel=2)
+            return None, status_code
 
         #NOTE: .get will probaly not work with other API
         results = r.json().get('results')

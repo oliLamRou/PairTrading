@@ -156,6 +156,8 @@ class DataWrangler(DataBase, Polygon):
                 ) or update:
 
             results = self.ticker_details(ticker)
+            if results == None:
+                return
 
             print(f'{self.TICKER_INFO_TABLE_NAME} --> {"Updating" if update else "Adding"}: {" ".join(str(r) for r in results.values())[:60]} ...\n')
             if update:

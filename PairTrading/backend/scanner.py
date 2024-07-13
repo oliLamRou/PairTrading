@@ -97,9 +97,9 @@ class Scanner(DataWrangler):
 
 if __name__ == '__main__':
     s = Scanner()
-    s.min_price = 10
-    s.max_price = 200
-    s.min_vol = 10000
+    s.min_price = 20
+    s.max_price = 50
+    s.min_vol = 100000
     s.industry = 'STATE COMMERCIAL BANKS'
     df = s.get_pairs
     print(df)
