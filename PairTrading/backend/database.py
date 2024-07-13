@@ -53,6 +53,7 @@ class DataBase:
     def _commit(self):
         self.conn.commit()
     
+    @property
     def _vacuum(self):
         self.conn.execute("VACUUM")
 

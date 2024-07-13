@@ -16,11 +16,18 @@ from PairTrading.src.utils import PROJECT_ROOT
 #DATA HANDLER
 class DataWrangler(DataBase, Polygon):
     POLYGON_DB = (PROJECT_ROOT / 'data' / 'polygon.db').resolve()
-    YFINANCE_DB = (PROJECT_ROOT / 'data' / 'market_data' / 'yfinance.db').resolve()
+    YFINANCE_DB = (PROJECT_ROOT / 'data' / 'local' / 'yfinance.db').resolve()
+    USER_DB = (PROJECT_ROOT / 'data' / 'local' / 'user.db').resolve()
 
-    TICKER_INFO_TABLE_NAME = 'ticker_details'
+    #User
+    TICKER_RANK_TABLE_NAME = 'ticker_rank'
+
+    #Yahoo
     MARKET_DATA_TABLE_NAME = 'market_data'
     FAILED_TICKER_TABLE_NAME = 'failed_ticker'
+
+    #Polygon
+    TICKER_INFO_TABLE_NAME = 'ticker_details'
     MARKET_SNAPSHOT_TABLE_NAME = 'grouped_daily'
     SIC_CODE_TABLE_NAME = 'sic_code'
     TICKER_TYPES_TABLE_NAME = 'ticker_types'
@@ -29,6 +36,7 @@ class DataWrangler(DataBase, Polygon):
         Polygon.__init__(self)
         self.__polygon_db = DataBase(path = self.POLYGON_DB)
         self.__yfinance_db = DataBase(path = self.YFINANCE_DB)
+        self.__user_db = DataBase(path = self.USER_DB)
 
         #Properties
         self._all_ticker_info = pd.DataFrame()
@@ -39,9 +47,13 @@ class DataWrangler(DataBase, Polygon):
 
         self.setup_polygon()
         self.setup_yfinance()
+        self.setup_user()
 
     def setup_user(self):
-        pass
+        self.__user_db.setup_table(
+            self.TICKER_RANK_TABLE_NAME,
+            self._renamed_columns(_constant.TICKER_RANK_COLUMNS)
+        )
 
     def setup_yfinance(self):
         #market_data
@@ -98,6 +110,22 @@ class DataWrangler(DataBase, Polygon):
     def _renamed_columns(self, columns: dict) -> dict:
          return {v[0]: v[1] for v in columns.values()}
 
+    def set_ticker_rank(self, ticker, rank):
+        values = _constant.TICKER_RANK_COLUMNS.copy()
+        values['ticker'] = ticker
+        values['rank'] = rank
+        if self.__user_db.has_value(self.TICKER_RANK_TABLE_NAME, 'ticker', ticker):
+            self.__user_db.update_row(self.TICKER_RANK_TABLE_NAME, values, 'ticker', ticker)
+        else:
+            self.__user_db.add_row(self.TICKER_RANK_TABLE_NAME, values)
+
+    def ticker_rank(self, ticker) -> int:
+        df = self.__user_db.get_rows(self.TICKER_RANK_TABLE_NAME, 'ticker', [ticker])
+        if df.empty:
+            return None
+
+        return df['rank'].iloc[0]
+
     def market_snapshot(self, 
             update: bool = False
         ) -> pd.DataFrame():
@@ -128,6 +156,8 @@ class DataWrangler(DataBase, Polygon):
                 ) or update:
 
             results = self.ticker_details(ticker)
+            if results == None:
+                return
 
             print(f'{self.TICKER_INFO_TABLE_NAME} --> {"Updating" if update else "Adding"}: {" ".join(str(r) for r in results.values())[:60]} ...\n')
             if update:
@@ -221,7 +251,7 @@ class DataWrangler(DataBase, Polygon):
 
 if __name__ == '__main__':
     dw = DataWrangler()
-    tickers = {'CFB', 'MCBC', 'USCB', 'ASB', 'WALpA', 'WTBA', 'FBNC', 'MVBF', 'FMNB', 'GBCI', 'HONE', 'BSRR', 'PEBO', 'FFIN', 'VBTX', 'FBP', 'CWBC', 'MNSB', 'CFG', 'BFST', 'CPF', 'CNOB', 'FIBK', 'STTpG', 'FITBI', 'IBCP', 'MTBpJ', 'TCBIO', 'CIVB', 'MOFG', 'TRST', 'GABC', 'BPRN', 'UBSI', 'MBCN', 'COLB', 'FITBO', 'FFNW', 'HOMB', 'CALB', 'CFGpH', 'EFSC', 'PPBI', 'CZNC', 'SBSI', 'BY', 'MSBI', 'LOB', 'BMRC', 'CVBF', 'NTRSO', 'BWFG', 'PCB', 'CCBG', 'FFIC', 'HBT', 'OBK', 'HTH', 'FITBP', 'INBK', 'MBINM', 'BCML', 'OVLY', 'UBCP', 'HMST', 'CCNE', 'CUBIpF', 'FITB', 'OFG', 'TCBK', 'FCCO', 'CFGpE', 'STBA', 'FRST', 'AUBpA', 'ORRF', 'EGBN'}
-    df = dw.market_data(tickers)
-    # df = dw._DataWrangler__yfinance_db.get_rows(dw.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
-    print(df)
+    # dw._DataWrangler__user_db._drop_table('ticker_rank')
+    dw.set_ticker_rank('AAPL', 0)
+    print(dw.ticker_rank('AAPL'))
+    # print(dw._DataWrangler__user_db.get_table('ticker_rank'))
