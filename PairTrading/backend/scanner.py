@@ -17,7 +17,7 @@ class Scanner(DataWrangler):
         self.office = None
         self.industry = None
 
-        #Ticker Details
+        #Ticker Details / snapshot
         self.min_price = 0
         self.max_price = 1000000
         self.min_vol = 0
@@ -28,10 +28,24 @@ class Scanner(DataWrangler):
         self.avg_vol = 1000000
 
         #Pair
+        self.potential_pair_amount = 2
         self.avg_diff_length = 90
 
         self.tickers = set(self.all_ticker_info['ticker'].to_list())
         self.bad_tickers = []
+
+    @property
+    def potential_pair(self) -> pd.DataFrame():
+        df = pd.DataFrame(columns = ['industry', 'potential_pair'])
+        for i, row in self.sic_code.iterrows():
+            sector_tickers = self.all_ticker_info[self.all_ticker_info.sic_code == row.sic_code].ticker.to_list()
+            snapshot_tickers = self.snapshot_filter.intersection(sector_tickers)
+            if len(snapshot_tickers) ** 2 < self.potential_pair_amount:
+                continue
+
+            df.loc[df.industry.size, ['industry', 'potential_pair']] = [row.industry_title, len(snapshot_tickers) ** 2]
+
+        return df.sort_values('potential_pair').reset_index(drop=True)
 
     @property
     def sic(self) -> list:
@@ -97,9 +111,11 @@ class Scanner(DataWrangler):
 
 if __name__ == '__main__':
     s = Scanner()
-    s.min_price = 20
-    s.max_price = 50
-    s.min_vol = 100000
-    s.industry = 'STATE COMMERCIAL BANKS'
-    df = s.get_pairs
-    print(df)
+    s.min_price = 5
+    s.max_price = 200
+    s.min_vol = 100
+    s.industry = 'SERVICES-AUTOMOTIVE REPAIR, SERVICES & PARKING'
+    x = s.potential_pair
+    print(x)
+    
+

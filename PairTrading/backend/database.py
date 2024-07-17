@@ -10,7 +10,7 @@ class DataBase:
     @property
     def conn(self):
         if not self._conn:
-            self._conn = sqlite3.connect(self.path)
+            self._conn = sqlite3.connect(self.path, check_same_thread=False)
 
         return self._conn
 
