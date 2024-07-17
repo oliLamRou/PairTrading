@@ -252,6 +252,7 @@ class DataWrangler(DataBase, Polygon):
 if __name__ == '__main__':
     dw = DataWrangler()
     # dw._DataWrangler__user_db._drop_table('ticker_rank')
-    dw.set_ticker_rank('AAPL', 0)
-    print(dw.ticker_rank('AAPL'))
+    #dw.set_ticker_rank('AAPL', 0)
+    df = dw.all_ticker_info
+    print(df)
     # print(dw._DataWrangler__user_db.get_table('ticker_rank'))

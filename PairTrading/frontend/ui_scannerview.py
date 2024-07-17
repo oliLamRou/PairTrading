@@ -26,8 +26,11 @@ class ScannerView:
         self.industry_dropdown = self.sector_dropdown
 
         #Get all industries
-        for i, s in enumerate(self.pairs_df.industry_title.sort_values().unique()):
-            count = self.pairs_df.industry_title.value_counts().get(s, 0)
+        #print(self.pairs_df)
+        #print(self.scanner.sic_code["industry_title"].to_list())
+        for i, s in enumerate(self.scanner.sic_code["industry_title"].to_list()):
+            #count = self.pairs_df.industry_title.value_counts().get(s, 0)
+            count = 0
             self.industry_list.append(s)
             self.industry_dropdown.append({"label": f"({count}) {s}", "value": i+2})
 
@@ -66,7 +69,7 @@ class ScannerView:
             print("popover") """
             
     def update_pairs(self):
-        self.pairs_df = self.scanner.get_pairs()
+        self.pairs_df = self.scanner.get_pairs
 
     def get_layout(self):
         scanner_settings = html.Div([
@@ -87,17 +90,20 @@ class ScannerView:
         chart_counter = 0
         layout_elements = []
         
-        filtered_pairs_df = self.pairs_df[(self.pairs_df.ratio <= self.max_avg_diff) & (self.pairs_df.industry_title == industry)].reset_index(drop=True).sort_values(by=("ratio"), ascending=True).reset_index()
+        #filtered_pairs_df = self.pairs_df[(self.pairs_df.ratio <= self.max_avg_diff) & (self.pairs_df.industry_title == industry)].reset_index(drop=True).sort_values(by=("ratio"), ascending=True).reset_index()
+        filtered_pairs_df = self.pairs_df[(self.pairs_df.avg_diff <= self.max_avg_diff)].reset_index(drop=True).sort_values(by=("avg_diff"), ascending=True).reset_index()
 
         i = 0
         max_tickers = 50
         for i, row in filtered_pairs_df.iterrows():
             ticker_a = row.A
             ticker_b = row.B
-            ratio = row.ratio
+            avg_diff = row.avg_diff
 
-            tickera_df = self.scanner.all_market_data[self.scanner.all_market_data.ticker == ticker_a]
-            tickerb_df = self.scanner.all_market_data[self.scanner.all_market_data.ticker == ticker_b]
+            tickera_df = self.scanner.market_data([ticker_a])
+            tickerb_df = self.scanner.market_data([ticker_b])
+            #tickera_df = self.scanner.all_market_data[self.scanner.all_market_data.ticker == ticker_a]
+            #tickerb_df = self.scanner.all_market_data[self.scanner.all_market_data.ticker == ticker_b]
 
             #if tickera_df.empty or ticker_a.find(".") >= 0 or ticker_b.find(".") >=0:
             #    continue
@@ -108,7 +114,7 @@ class ScannerView:
         
             chart = self.compare_charts[chart_counter]
             chart.chartType = "compare"
-            chart.label = f"{i}. {ticker_a} - {ticker_b} - {ratio}"
+            chart.label = f"{i}. {ticker_a} - {ticker_b} - {avg_diff}"
             chart.data = tickera_df
             chart.compareData = tickerb_df
             chart_counter += 1

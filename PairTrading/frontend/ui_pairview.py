@@ -59,7 +59,7 @@ class PairView:
                     #html.H3("Pair Details", className="card-title"),
                     html.Div([
                         html.P("Pair Order"),
-                        html.P(f"Pair Last Price: {df_a.iloc[-1:].close.unique()[0]}") ,
+                        #html.P(f"Pair Last Price: {df_a.iloc[-1:].close.unique()[0]}") ,
                         html.P(f"{self.ticker_a} Dollar Volume Average: "),
                         html.P(f"{self.ticker_b} Dollar Volume Average: ")
                     ])              
