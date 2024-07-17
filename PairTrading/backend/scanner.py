@@ -37,7 +37,7 @@ class Scanner(DataWrangler):
     def sic(self) -> list:
         if self.industry:
             return self.sic_code[self.sic_code['industry_title'] == self.industry].sic_code.iloc[0]
-        else:
+        elif self.office:
             return self.sic_code[self.sic_code['office'] == self.office].sic_code.iloc[0]
 
     #Snapshot filter
@@ -54,8 +54,16 @@ class Scanner(DataWrangler):
 
     @property
     def get_pairs(self) -> pd.DataFrame():
+        if not self.sic:
+            return
+        
         sector_tickers = self.all_ticker_info[self.all_ticker_info.sic_code == self.sic].reset_index(drop=True).ticker.to_list()
+        if not sector_tickers:
+            return
+
         snapshot_tickers = self.snapshot_filter.intersection(sector_tickers)
+        if not snapshot_tickers:
+            return
 
         market_data = self.market_data(snapshot_tickers)
         tickers = market_data.ticker.unique()
@@ -101,5 +109,6 @@ if __name__ == '__main__':
     s.max_price = 50
     s.min_vol = 100000
     s.industry = 'STATE COMMERCIAL BANKS'
-    df = s.get_pairs
-    print(df)
+    # df = s.get_pairs
+    # print(df)
+    print(s.sic)

@@ -151,15 +151,21 @@ class DataWrangler(DataBase, Polygon):
             update: bool = False
         ) -> pd.DataFrame():
 
+        #Do when not exists in DB or Update is True
         if not self.__polygon_db.has_value(
                 self.TICKER_INFO_TABLE_NAME, 'ticker', ticker
                 ) or update:
 
             results = self.ticker_details(ticker)
-            if results == None:
+            if not results:
                 return
 
-            print(f'{self.TICKER_INFO_TABLE_NAME} --> {"Updating" if update else "Adding"}: {" ".join(str(r) for r in results.values())[:60]} ...\n')
+            print('{} --> {}: {} ...\n'.format(
+                self.TICKER_INFO_TABLE_NAME, 
+                "Updating" if update else "Adding", 
+                " ".join(str(r) for r in results.values())[:60]
+                )
+            )
             if update:
                 self.__polygon_db.update_row(self.TICKER_INFO_TABLE_NAME, results, 'ticker', ticker)
             else:
@@ -251,7 +257,9 @@ class DataWrangler(DataBase, Polygon):
 
 if __name__ == '__main__':
     dw = DataWrangler()
-    # dw._DataWrangler__user_db._drop_table('ticker_rank')
-    dw.set_ticker_rank('AAPL', 0)
-    print(dw.ticker_rank('AAPL'))
-    # print(dw._DataWrangler__user_db.get_table('ticker_rank'))
+    df = dw.all_ticker_info
+    print(df)
+    # # dw._DataWrangler__user_db._drop_table('ticker_rank')
+    # dw.set_ticker_rank('AAPL', 0)
+    # print(dw.ticker_rank('AAPL'))
+    # # print(dw._DataWrangler__user_db.get_table('ticker_rank'))
