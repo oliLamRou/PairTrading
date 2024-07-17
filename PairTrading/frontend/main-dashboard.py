@@ -18,7 +18,7 @@ scanner.max_price = 200
 scanner.min_vol = 100000
 scanner.industry = "STATE COMMERCIAL BANKS"
 
-scanner_view = ScannerView(scanner)
+scanner_view = ScannerView()
 scanner_view.set_callback_app(app)
 
 #Pair View
