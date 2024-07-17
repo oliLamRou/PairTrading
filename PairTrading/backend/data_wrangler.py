@@ -217,6 +217,8 @@ class DataWrangler(DataBase, Polygon):
             update: bool = False
         ) -> pd.DataFrame():
         
+
+
         #When update skip this part so all tickers will be updated
         to_download = tickers
         if not update:
@@ -253,13 +255,5 @@ class DataWrangler(DataBase, Polygon):
 
 if __name__ == '__main__':
     dw = DataWrangler()
-    df = dw.all_ticker_info
-    print(df.sample(5).columns)
-    print(dw.market_snapshot().columns)
-    # df = dw.sic_code
-    # x_ = []
-    # for x in df.value_counts():
-    #     if x > 10:
-    #         x_.append(x)
-
-    # print(x_)
+    df = dw.market_data(['AAPL'])
+    print(df)

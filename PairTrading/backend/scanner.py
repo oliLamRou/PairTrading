@@ -115,7 +115,7 @@ if __name__ == '__main__':
     s.max_price = 200
     s.min_vol = 100
     s.industry = 'SERVICES-AUTOMOTIVE REPAIR, SERVICES & PARKING'
-    x = s.potential_pair
+    x = s.get_pairs
     print(x)
     
 

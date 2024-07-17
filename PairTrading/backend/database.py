@@ -3,23 +3,15 @@ import pandas as pd
 
 class DataBase:
     def __init__(self, path):
-        self._conn = None
-        self._cursor = None
         self.path = path
 
     @property
     def conn(self):
-        if not self._conn:
-            self._conn = sqlite3.connect(self.path, check_same_thread=False)
-
-        return self._conn
+        return sqlite3.connect(self.path)
 
     @property
     def cursor(self):
-        if not self._cursor:
-            self._cursor = self.conn.cursor()
-
-        return self._cursor
+        return self.conn.cursor()
 
     #READ
     def list_tables(self) -> pd.DataFrame():
@@ -34,9 +26,12 @@ class DataBase:
         return False if query.empty else True
 
     def get_rows(self, table_name: str, column_name: str, values: list) -> pd.DataFrame():
+        conn = sqlite3.connect(self.path)
         values = "'" + "', '".join(values) + "'"
         query = f"SELECT * FROM {table_name} WHERE {column_name} IN ({values})"
-        return pd.read_sql_query(query, self.conn)
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        return df
 
     def has_value(self, table_name, column_name, value) -> bool:
         query = self.get_rows(table_name, column_name, [value])
