@@ -37,7 +37,8 @@ class DashChart:
         if self.chartType == "candlestick":
             @app.callback(
                 Output(f'{self.name}-graph', "figure"),
-                Input(f'{self.name}-toggle-bbands', "value"))
+                Input(f'{self.name}-toggle-bbands', "value"),
+            )
     
             def appCallback(value):
                 fig = self.chart_candlestick_callback(value)

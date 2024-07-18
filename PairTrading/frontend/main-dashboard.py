@@ -16,12 +16,15 @@ scanner=Scanner()
 scanner.min_price = 2
 scanner.max_price = 200
 scanner.min_vol = 100000
-scanner_view = ScannerView(scanner)
+scanner.industry = "STATE COMMERCIAL BANKS"
+
+scanner_view = ScannerView()
 scanner_view.set_callback_app(app)
 
 #Pair View
 pair_view = PairView("LNT", "WEC")
-pair_view.market_data = scanner.all_market_data
+#pair_view.market_data = scanner.all_market_data
+pair_view.market_data = scanner.market_data(["LNT", "WEC"])
 pair_view.set_callback_app(app)
 
 tab1_content = dbc.Card(

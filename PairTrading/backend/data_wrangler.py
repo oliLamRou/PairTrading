@@ -13,6 +13,8 @@ from PairTrading.backend.polygon import Polygon
 from PairTrading.src import _constant
 from PairTrading.src.utils import PROJECT_ROOT
 
+import matplotlib.pyplot as plt
+
 #DATA HANDLER
 class DataWrangler(DataBase, Polygon):
     POLYGON_DB = (PROJECT_ROOT / 'data' / 'polygon.db').resolve()
@@ -126,7 +128,7 @@ class DataWrangler(DataBase, Polygon):
 
         return df['rank'].iloc[0]
 
-    def market_snapshot(self, 
+    def market_snapshot(self,
             update: bool = False
         ) -> pd.DataFrame():
 
@@ -198,7 +200,7 @@ class DataWrangler(DataBase, Polygon):
         ticker_df['ticker'] = ticker
         ticker_df['timespan'] = timespan
         ticker_df['date'] = ticker_df['date'].dt.strftime('%Y-%m-%d')
-        return ticker_df
+        return ticker_df[ticker_df.close.notna()]
 
     def manage_wrong_tickers(self, tickers):
         #Manage Failed tickers
@@ -220,7 +222,14 @@ class DataWrangler(DataBase, Polygon):
             period: str = '1y',
             update: bool = False
         ) -> pd.DataFrame():
+
+        def get_rows_with_date_format(tickers):
+            df = self.__yfinance_db.get_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
+            df.date = pd.to_datetime(df.date)
+            return df
         
+
+
         #When update skip this part so all tickers will be updated
         to_download = tickers
         if not update:
@@ -231,14 +240,14 @@ class DataWrangler(DataBase, Polygon):
 
         #When to_download is empty there is nothing to update so return tickers
         if not to_download:
-            return self.__yfinance_db.get_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
+            return get_rows_with_date_format(tickers)
 
         #Download data, if nothing downloaded mean all bad tickers.
         print(f'--> Trying to download: {to_download}')
         df = yf.download(to_download, period=period)
         if df.empty:
             self.manage_wrong_tickers(tickers)
-            return self.__yfinance_db.get_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
+            return get_rows_with_date_format(tickers)
 
         #Delete all rows with tickers in to_download
         self.__yfinance_db._delete_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', to_download)
@@ -247,19 +256,15 @@ class DataWrangler(DataBase, Polygon):
             ticker_df = self.format_ticker(df, ticker, timespan)
             if ticker_df.empty:
                 continue
-        
+            
             self.write_market_data(ticker_df)
 
         self.__yfinance_db._commit
 
         self.manage_wrong_tickers(tickers)
-        return self.__yfinance_db.get_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
+        return get_rows_with_date_format(tickers)
 
 if __name__ == '__main__':
     dw = DataWrangler()
-    df = dw.all_ticker_info
+    df = dw.market_data(['AAPL'])
     print(df)
-    # # dw._DataWrangler__user_db._drop_table('ticker_rank')
-    # dw.set_ticker_rank('AAPL', 0)
-    # print(dw.ticker_rank('AAPL'))
-    # # print(dw._DataWrangler__user_db.get_table('ticker_rank'))

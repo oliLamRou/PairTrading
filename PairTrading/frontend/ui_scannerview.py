@@ -3,9 +3,11 @@ from PairTrading.backend.data_wrangler import DataWrangler
 from PairTrading.backend.scanner import Scanner
 from PairTrading.frontend.data_utils import DataUtils
 from PairTrading.frontend.pair import Pair
+from PairTrading.frontend.ui_pairview import PairView
 
-from dash import Dash, html, dcc, Input, Output
+from dash import Dash, html, dcc, Input, Output, State, ctx, ALL
 import dash_bootstrap_components as dbc
+import json
 
 class ScannerView:
     def __init__(self, scanner) -> None:
@@ -13,8 +15,12 @@ class ScannerView:
         self.pairs_df = None
         self.max_avg_diff = 0.15
         self.scanner = scanner
-        self.update_pairs()
+        self.pairs_list = []
 
+        #Preload pair view page
+        self.pair_view = PairView("LNT", "WEC")
+        self.pair_view.market_data = self.scanner.market_data(["LNT", "WEC"])
+        
         #Preload chart objects
         self.compare_charts = []
         for i in range(200):
@@ -25,15 +31,17 @@ class ScannerView:
         self.industry_list = []
         self.industry_dropdown = self.sector_dropdown
 
-        #Get all industries
-        for i, s in enumerate(self.pairs_df.industry_title.sort_values().unique()):
-            count = self.pairs_df.industry_title.value_counts().get(s, 0)
+        for i, s in enumerate(self.scanner.sic_code["industry_title"].to_list()):
+            #count = self.pairs_df.industry_title.value_counts().get(s, 0)
+            count = 0
             self.industry_list.append(s)
             self.industry_dropdown.append({"label": f"({count}) {s}", "value": i+2})
 
-
     def set_callback_app(self, app):
         print("set callback app")
+        self.callback_app = app
+        self.pair_view.set_callback_app(app)
+        self.pairview_layout = self.pair_view.get_layout()
         for c in self.compare_charts:
             c.set_callback_app(app)
 
@@ -51,23 +59,36 @@ class ScannerView:
             if minprice and maxprice and industry:
                 self.max_avg_diff = max_avg_diff
                 return self.filter_pairs(self.industry_list[int(industry)-2])
-
-        """ @app.callback(
-            Output("page-content", "children"),
-            [
-                #Input("pagination", "active_page"),
-                Input("minprice", "value"),
-                Input("maxprice", "value"),
-                Input("industry-select", "value"),
-                Input("max-avgdiff", "value"),
-            ],
-        )
-        def apply_filter_callback(minprice, maxprice, industry, max_avg_diff):
-            print("popover") """
             
-    def update_pairs(self):
-        self.pairs_df = self.scanner.get_pairs()
+        @app.callback(
+            Output("modal-details", "is_open"),
+            Output("pairview-header-content", "children"),
+            Output("pairview-content", "children"),
+            Input({"type": "open-details", "index": ALL}, "n_clicks"),
+            State("modal-details", "is_open"),
+        )            
+        def toggle_details(n, is_open):
+            print("toggle")
+            for p in ctx.triggered:
+                invoker = p["prop_id"]
+                invoker_index = json.loads(invoker.split('.')[0])["index"]  
+                ticker_a = self.pairs_list[invoker_index][0]
+                ticker_b = self.pairs_list[invoker_index][1]              
+                #print(invoker_index, self.pairs_list[invoker_index])
+                
+                if n[invoker_index]:
+                    self.pair_view.ticker_a = ticker_a
+                    self.pair_view.ticker_b = ticker_b
+                    self.pair_view.market_data = self.scanner.market_data([ticker_a, ticker_b])
+                    return not is_open, html.H6(f"{ticker_a}, {ticker_b} - Pair View"), self.pair_view.get_layout()
 
+            """ self.pair_view.ticker_a = ticker_a
+            self.pair_view.ticker_b = ticker_b
+            self.pair_view.market_data = self.scanner.market_data([ticker_a, ticker_b])
+            return is_open, html.H6(f"{ticker_a}, {ticker_b} - Pair View"), self.pair_view.get_layout() """        
+            return is_open, "nothing"
+
+    
     def get_layout(self):
         scanner_settings = html.Div([
             dbc.Card([       
@@ -81,34 +102,48 @@ class ScannerView:
             ])
         ])
 
-        return [scanner_settings, html.Div(id="result-content"), html.Div(id="page-content")]
+        details_modal = dbc.Modal(
+            [
+                dbc.ModalHeader(html.Div(id="pairview-header-content")),
+                dbc.ModalBody( html.Div(id="pairview-content")),
+            ],
+            id="modal-details",
+            fullscreen=True,
+            is_open=False,
+        )
+
+        return [scanner_settings, html.Div(id="result-content"), html.Div(id="page-content"), details_modal]
 
     def filter_pairs(self, industry):
-        chart_counter = 0
+        self.pairs_list = []
         layout_elements = []
+        chart_counter = 0
         
-        filtered_pairs_df = self.pairs_df[(self.pairs_df.ratio <= self.max_avg_diff) & (self.pairs_df.industry_title == industry)].reset_index(drop=True).sort_values(by=("ratio"), ascending=True).reset_index()
+        self.scanner.industry = industry
+        pairs_df = self.scanner.get_pairs
+        
+        if pairs_df.empty:
+            return None
+        
+        filtered_pairs_df = pairs_df[(pairs_df.avg_diff <= self.max_avg_diff)].reset_index(drop=True).sort_values(by=("avg_diff"), ascending=True).reset_index()
 
         i = 0
         max_tickers = 50
         for i, row in filtered_pairs_df.iterrows():
             ticker_a = row.A
             ticker_b = row.B
-            ratio = row.ratio
+            avg_diff = row.avg_diff
 
-            tickera_df = self.scanner.all_market_data[self.scanner.all_market_data.ticker == ticker_a]
-            tickerb_df = self.scanner.all_market_data[self.scanner.all_market_data.ticker == ticker_b]
+            tickera_df = self.scanner.market_data([ticker_a])
+            tickerb_df = self.scanner.market_data([ticker_b])
+            self.pairs_list.append([ticker_a, ticker_b])
 
-            #if tickera_df.empty or ticker_a.find(".") >= 0 or ticker_b.find(".") >=0:
-            #    continue
-
-            i += 1
             if i > max_tickers:
                 break
         
             chart = self.compare_charts[chart_counter]
             chart.chartType = "compare"
-            chart.label = f"{i}. {ticker_a} - {ticker_b} - {ratio}"
+            chart.label = f"{i}. {ticker_a} - {ticker_b} - {avg_diff}"
             chart.data = tickera_df
             chart.compareData = tickerb_df
             chart_counter += 1
@@ -116,33 +151,27 @@ class ScannerView:
             chart_card = chart.get_layout()
             detail_card = dbc.Card([
                 dbc.CardBody("Details"),
-                #dbc.Button("Click Me", id="pair-view-target", color="primary")
             ])
-
-            pair_view_pop = dbc.Popover(
-                "Pair View",
-                target="pair-view-target",
-                hide_arrow=True,
-                body=True,
-            )
 
             pair_card = dbc.Card([
                 dbc.CardBody([
                     dbc.Row([
                         dbc.Col(chart_card, width=6),
                         dbc.Col(detail_card, width=3),
+                        dbc.Col(dbc.Button("Details", id={"type" : "open-details", "index" : i}), width=3),
                     ])
                 ]),
-                pair_view_pop               
             ])
 
             layout_elements.append(pair_card)
+            i += 1
 
         return layout_elements
 
+
 if __name__ == '__main__':
     print("ui_scannerview")
-    app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+    app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
     scanner=Scanner()
     scanner.min_price = 2
