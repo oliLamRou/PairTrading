@@ -7,6 +7,7 @@ import warnings
 import pandas as pd
 import requests
 import yfinance as yf
+import sqlite3
 
 from PairTrading.backend.database import DataBase
 from PairTrading.backend.polygon import Polygon
@@ -36,9 +37,9 @@ class DataWrangler(DataBase, Polygon):
 
     def __init__(self):
         Polygon.__init__(self)
-        self.__polygon_db = DataBase(path = self.POLYGON_DB)
-        self.__yfinance_db = DataBase(path = self.YFINANCE_DB)
-        self.__user_db = DataBase(path = self.USER_DB)
+        self.__polygon_db = DataBase(sqlite3.connect(self.POLYGON_DB))
+        self.__yfinance_db = DataBase(sqlite3.connect(self.YFINANCE_DB))
+        self.__user_db = DataBase(sqlite3.connect(self.USER_DB))
 
         #Properties
         self._all_ticker_info = pd.DataFrame()
@@ -266,5 +267,11 @@ class DataWrangler(DataBase, Polygon):
 
 if __name__ == '__main__':
     dw = DataWrangler()
-    df = dw.market_data(['AAPL'])
-    print(df)
+    pair_info = {
+        'A': 'AAPL',
+        'B': 'MSTR',
+        'pair_order': 1,
+        'watchlist': 'default'
+    }
+    dw.add_to_watchlist(pair_info)
+    print(dw.list_watchlist())
