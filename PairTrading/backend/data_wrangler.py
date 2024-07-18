@@ -153,15 +153,21 @@ class DataWrangler(DataBase, Polygon):
             update: bool = False
         ) -> pd.DataFrame():
 
+        #Do when not exists in DB or Update is True
         if not self.__polygon_db.has_value(
                 self.TICKER_INFO_TABLE_NAME, 'ticker', ticker
                 ) or update:
 
             results = self.ticker_details(ticker)
-            if results == None:
+            if not results:
                 return
 
-            print(f'{self.TICKER_INFO_TABLE_NAME} --> {"Updating" if update else "Adding"}: {" ".join(str(r) for r in results.values())[:60]} ...\n')
+            print('{} --> {}: {} ...\n'.format(
+                self.TICKER_INFO_TABLE_NAME, 
+                "Updating" if update else "Adding", 
+                " ".join(str(r) for r in results.values())[:60]
+                )
+            )
             if update:
                 self.__polygon_db.update_row(self.TICKER_INFO_TABLE_NAME, results, 'ticker', ticker)
             else:
