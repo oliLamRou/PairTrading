@@ -214,6 +214,11 @@ class DataWrangler(DataBase, Polygon):
             period: str = '1y',
             update: bool = False
         ) -> pd.DataFrame():
+
+        def get_rows_with_date_format(tickers):
+            df = self.__yfinance_db.get_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
+            df.date = pd.to_datetime(df.date)
+            return df
         
         #When update skip this part so all tickers will be updated
         to_download = tickers
@@ -225,14 +230,14 @@ class DataWrangler(DataBase, Polygon):
 
         #When to_download is empty there is nothing to update so return tickers
         if not to_download:
-            return self.__yfinance_db.get_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
+            return get_rows_with_date_format(tickers)
 
         #Download data, if nothing downloaded mean all bad tickers.
         print(f'--> Trying to download: {to_download}')
         df = yf.download(to_download, period=period)
         if df.empty:
             self.manage_wrong_tickers(tickers)
-            return self.__yfinance_db.get_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
+            return get_rows_with_date_format(tickers)
 
         #Delete all rows with tickers in to_download
         self.__yfinance_db._delete_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', to_download)
@@ -247,7 +252,7 @@ class DataWrangler(DataBase, Polygon):
         self.__yfinance_db._commit
 
         self.manage_wrong_tickers(tickers)
-        return self.__yfinance_db.get_rows(self.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
+        return get_rows_with_date_format(tickers)
 
 if __name__ == '__main__':
     dw = DataWrangler()
