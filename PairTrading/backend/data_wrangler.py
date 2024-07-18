@@ -23,6 +23,7 @@ class DataWrangler(DataBase, Polygon):
 
     #User
     TICKER_RANK_TABLE_NAME = 'ticker_rank'
+    WATCHLIST_TABLE_NAME = 'watchlist'
 
     #Yahoo
     MARKET_DATA_TABLE_NAME = 'market_data'
@@ -55,6 +56,11 @@ class DataWrangler(DataBase, Polygon):
         self.__user_db.setup_table(
             self.TICKER_RANK_TABLE_NAME,
             self._renamed_columns(_constant.TICKER_RANK_COLUMNS)
+        )
+
+        self.__user_db.setup_table(
+            self.WATCHLIST_TABLE_NAME,
+            self._renamed_columns(_constant.WATCHLIST_COLUMNS)
         )
 
     def setup_yfinance(self):
@@ -112,6 +118,25 @@ class DataWrangler(DataBase, Polygon):
     def _renamed_columns(self, columns: dict) -> dict:
          return {v[0]: v[1] for v in columns.values()}
 
+    #USER
+    def add_to_watchlist(self, pair_info: dict):
+        if pair_info.get('A') == None or pair_info.get('B') == None:
+            return
+
+        pair_info['pair'] = f'{pair_info.get("A")}__{pair_info.get("B")}'
+        if self.__user_db.has_value(self.WATCHLIST_TABLE_NAME, 'pair', pair_info['pair']):
+            self.__user_db.update_row(self.WATCHLIST_TABLE_NAME, pair_info, 'pair', pair_info['pair'])
+        else:
+            print('add')
+            self.__user_db.add_row(self.WATCHLIST_TABLE_NAME, pair_info)
+
+    def watchlist(self, wishlist_name: str) -> pd.DataFrame():
+        #return DF of wa
+        return
+
+    def list_watchlist(self) -> list:
+        return self.__user_db.get_table(self.WATCHLIST_TABLE_NAME)
+
     def set_ticker_rank(self, ticker, rank):
         values = _constant.TICKER_RANK_COLUMNS.copy()
         values['ticker'] = ticker
@@ -128,6 +153,9 @@ class DataWrangler(DataBase, Polygon):
 
         return df['rank'].iloc[0]
 
+
+
+    #MARKET
     def market_snapshot(self,
             update: bool = False
         ) -> pd.DataFrame():
@@ -266,5 +294,15 @@ class DataWrangler(DataBase, Polygon):
 
 if __name__ == '__main__':
     dw = DataWrangler()
-    df = dw.market_data(['AAPL'])
-    print(df)
+    pair_info = {
+        'A': 'AAPL',
+        'B': 'MSTR',
+        'pair_order': 1,
+        'watchlist': 'default'
+    }
+    # # dw.add_to_watchlist(pair_info)
+    # print(dw.list_watchlist())
+    # # dw.set_ticker_rank("AAPL", 4)
+    # # print(dw.ticker_rank('AAPL'))
+    dw.set_ticker_rank("AAPL", 1)
+    print(dw.ticker_rank("AAPL"))

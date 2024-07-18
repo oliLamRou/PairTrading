@@ -96,8 +96,11 @@ class DataBase:
 if __name__ == '__main__':
     from PairTrading.src import _constant
     db = DataBase('../../data/polygon.db')
-
-    # df = db.get_table('ticker_detail')
-    print(db.get_rows('market_data', 'ticker', ['MSTR', 'AA']))
+    pair_info = {
+        'A': 'AAPL',
+        'B': 'MSTR'
+    }
+    # db.add_row('watchlist', pair_info)
+    print(db.get_table('ticker_details'))
 
 

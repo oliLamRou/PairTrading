@@ -3,6 +3,7 @@ import configparser
 
 import pandas as pd
 import requests
+import warnings
 
 from PairTrading.src import _constant
 from PairTrading.src.utils import PROJECT_ROOT

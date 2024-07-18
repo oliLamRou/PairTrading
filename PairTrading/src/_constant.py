@@ -2,6 +2,14 @@ from PairTrading.src.utils import PROJECT_ROOT
 
 CONFIG = (PROJECT_ROOT / '.config.ini').resolve()
 
+WATCHLIST_COLUMNS = {
+    'pair': ['pair', 'TEXT'],
+    'A': ['A', 'TEXT'],
+    'B': ['B', 'TEXT'],
+    'pair_order': ['pair_order', 'INTERGER'],  
+    'watchlist': ['watchlist', 'TEXT'] 
+}
+
 TICKER_RANK_COLUMNS = {
     'ticker': ['ticker', 'TEXT'],
     'rank': ['rank', 'INTERGER']    
