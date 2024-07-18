@@ -1,46 +1,33 @@
 from PairTrading.backend.polygon import Polygon
 from PairTrading.backend.data_wrangler import DataWrangler
 import pandas as pd
+from datetime import date
 
 class DataUtils():
-    def __init__(self):
-        self.dw = DataWrangler()
+    @staticmethod
+    def get_average_volume(ticker: str, period=30) -> float:
+        return DataWrangler().market_data([ticker]).volume.rolling(period).mean().to_list()[-1]
     
-    def get_ticker_details(self, ticker=""):
-        df = self.dw.market_data("ticker")
-        return df
+    @staticmethod
+    def get_last_price(ticker, period="day") -> float:
+        #NOTE: Should we cut today directly in datawrangler?
+        today = pd.to_datetime(date.today())
+        df = DataWrangler().market_data([ticker])
+        return df[df.date != today].max().close
     
-    def get_ticker_data(self, ticker, data=""):
-        return self.dw.ticker_info(ticker)
+    @staticmethod
+    def normalize_max(data: pd.Series()) -> pd.Series():
+        return data / data.max()
     
-    def get_average_volume(self, ticker="", period=30):
-        v = self.get_ticker_details(ticker).volume[-period:].mean()
-        return v
-    
-    def get_last_price(self, ticker="", period="day"):
-        v = self.get_ticker_details(ticker).close[-1:]
-        return v
-    
-    def normalize_max(self, df, column=""):
-        ddf = df.copy()
-        ddf[column] = df[column] / df[column].max()
-        return ddf
-    
-    def normalize_minmax(self, df, column=""):
-        ddf = df.copy()
-        ddf[column] = (df[column] - df[column].min()) / (df[column].max() - df[column].min())
-        return ddf
-    
-    def get_valid_tickers():
-        return ""
+    @staticmethod
+    def normalize_minmax(data: pd.Series()) -> pd.Series():
+        return (data - data.min()) / (data.max() - data.min())
         
 if __name__ == '__main__':
-    d = DataUtils()
-    #print(d.p.grouped_daily("day_AA"))
-    #df = d.get_ticker_data("")
-    #nrm = d.normalize_max(df, "close")
-    #print(nrm)
-    #print(d.normalize_minmax(df, "close"))
+    print('Avg Vol:', DataUtils.get_average_volume('AAPL'))
+    print('Last Close:', DataUtils.get_last_price('AAPL'))
 
-    #print(d.get_average_volume("AA", 30))
-    #print(d.get_last_price("AA"))
+    dw = DataWrangler()
+    df = dw.market_data(['AAPL'])
+    print('Normalize Max:', DataUtils.normalize_max(df.close))
+    print('Normalize MinMax:', DataUtils.normalize_minmax(df.close))
