@@ -80,7 +80,7 @@ class Scanner(DataWrangler):
             return
 
         market_data = self.market_data(snapshot_tickers)
-        tickers = market_data.ticker.unique()
+        tickers = market_data.ticker.sort_values().unique()
 
         close_data = market_data.pivot(index='date', columns='ticker', values='close')
         close_data = close_data[-self.avg_diff_length:]
