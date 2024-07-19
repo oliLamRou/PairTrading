@@ -6,6 +6,12 @@ class DataBase:
         self.path = path
 
     #READ
+    def _read_sql_query(self, query):
+        conn = sqlite3.connect(self.path)
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        return df
+
     def list_tables(self) -> pd.DataFrame():
         return self._read_sql_query("SELECT name FROM sqlite_master WHERE type='table'")
 
@@ -35,13 +41,18 @@ class DataBase:
     def get_table_columns(self, table_name: str) -> pd.DataFrame():
         return self._read_sql_query(f"PRAGMA table_info({table_name})")['name']
 
-    def _read_sql_query(self, query):
-        conn = sqlite3.connect(self.path)
-        df = pd.read_sql_query(query, conn)
-        conn.close()
-        return df
-
     #WRITE
+    def _execute(self, query, values=None):
+        conn = sqlite3.connect(self.path)
+        cursor = conn.cursor()
+        if values:
+            cursor.execute(query, values)
+        else:
+            cursor.execute(query)
+
+        conn.commit()
+        conn.close()
+
     @property
     def _vacuum(self):
         self._execute("VACUUM")
@@ -92,25 +103,8 @@ class DataBase:
         values = "'" + "', '".join(values) + "'"
         self._execute(f'DELETE FROM {table_name} WHERE {column_name} IN ({values})')
 
-    def _execute(self, query, values=None):
-        conn = sqlite3.connect(self.path)
-        cursor = conn.cursor()
-        if values:
-            cursor.execute(query, values)
-        else:
-            cursor.execute(query)
-
-        conn.commit()
-        conn.close()
-
 if __name__ == '__main__':
     from PairTrading.src import _constant
-    db = DataBase('../../data/polygon.db')
-    pair_info = {
-        'A': 'AAPL',
-        'B': 'MSTR'
-    }
-    # db.add_row('watchlist', pair_info)
-    print(db.get_table('ticker_details'))
-
+    db = DataBase('../../data/local/user.db')
+    # db._drop_table('watchlist')
 

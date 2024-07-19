@@ -69,15 +69,15 @@ class Scanner(DataWrangler):
     @property
     def get_pairs(self) -> pd.DataFrame():
         if not self.sic:
-            return
+            return pd.DataFrame()
         
         sector_tickers = self.all_ticker_info[self.all_ticker_info.sic_code == self.sic].reset_index(drop=True).ticker.to_list()
         if not sector_tickers:
-            return
+            return pd.DataFrame()
 
         snapshot_tickers = self.snapshot_filter.intersection(sector_tickers)
         if not snapshot_tickers:
-            return
+            return pd.DataFrame()
 
         market_data = self.market_data(snapshot_tickers)
         tickers = market_data.ticker.sort_values().unique()
