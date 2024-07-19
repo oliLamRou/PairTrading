@@ -81,11 +81,7 @@ class ScannerView:
                     self.pair_view.ticker_b = ticker_b
                     self.pair_view.market_data = self.scanner.market_data([ticker_a, ticker_b])
                     return not is_open, html.H6(f"{ticker_a}, {ticker_b} - Pair View"), self.pair_view.get_layout()
-
-            """ self.pair_view.ticker_a = ticker_a
-            self.pair_view.ticker_b = ticker_b
-            self.pair_view.market_data = self.scanner.market_data([ticker_a, ticker_b])
-            return is_open, html.H6(f"{ticker_a}, {ticker_b} - Pair View"), self.pair_view.get_layout() """        
+     
             return is_open, "nothing", "nothing"
 
     

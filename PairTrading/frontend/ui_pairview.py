@@ -67,10 +67,18 @@ class PairView:
                 dbc.CardBody([
                     #html.H3("Pair Details", className="card-title"),
                     html.Div([
-                        html.P("Pair Order"),
-                        #html.P(f"Pair Last Price: {df_a.iloc[-1:].close.unique()[0]}") ,
+                        html.P("Pair Price: xxxx"),
                         html.P(f"{self.ticker_a} Dollar Volume Average: "),
-                        html.P(f"{self.ticker_b} Dollar Volume Average: ")
+                        html.P(f"{self.ticker_b} Dollar Volume Average: "),
+                        html.Br(),
+                        dbc.Checklist(options=[{"label": "Watchlist", "value": 1},{"label": "Reverse Order", "value": 2},],value=[],id="switches-input",inline=False,switch=True,),
+                        dbc.InputGroup([dbc.InputGroupText("Hedge Ratio"), dbc.Input(placeholder="Ratio", type="number", step=0.01)], className="mb-3"),
+                        dbc.InputGroup([dbc.InputGroupText("Notes"), dbc.Textarea()], className="mb-3"),
+                        #html.P(f"Pair Last Price: {df_a.iloc[-1:].close.unique()[0]}") ,
+                        
+                        
+                        dbc.Button("Reset", color="primary", disabled=True),
+                        dbc.Button("Save", color="primary", disabled=True),
                     ])              
                 ])
             ])
