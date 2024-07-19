@@ -195,21 +195,21 @@ class DashChart:
         return fig
     
     def chart_compare_callback(self, normalize, scale, offset):
-        dfA = self._data
-        dfB = self.compareData
+        yaxis = self.dataKeys['Close']
         
-        d = DataUtils()
-
         if normalize:
-            dfA = d.normalize_minmax(self._data, self.dataKeys['Close'])
-            dfB = d.normalize_minmax(self.compareData, self.dataKeys['Close'])
+            self._data["normalized_close"] = DataUtils.normalize_minmax(self._data[self.dataKeys['Close']])
+            self.compareData["normalized_close"] = DataUtils.normalize_minmax(self.compareData[self.dataKeys['Close']])
+            yaxis = "normalized_close"
 
-        pd.options.mode.copy_on_write = True
-        dfB[self.dataKeys['Close']] = dfB[self.dataKeys['Close']] * scale + offset
+        else:
+            yaxis = "scaled_close"
+            self._data["scaled_close"] = self._data[self.dataKeys['Close']]
+            self.compareData["scaled_close"] = self.compareData[self.dataKeys['Close']] * scale + offset
 
         figures = [
-            go.Scatter(x=self._data[self.dataKeys['Time']], y=dfA[self.dataKeys['Close']], line={"width" : 1}, name="A"),
-            go.Scatter(x=self.compareData[self.dataKeys['Time']], y=dfB[self.dataKeys['Close']], line={"width" : 1},name="B"),
+            go.Scatter(x=self._data[self.dataKeys['Time']], y=self._data[yaxis], line={"width" : 1}, name="A"),
+            go.Scatter(x=self.compareData[self.dataKeys['Time']], y=self.compareData[yaxis], line={"width" : 1},name="B"),
         ]
 
         fig = go.Figure(figures)
