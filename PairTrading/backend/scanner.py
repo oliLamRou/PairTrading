@@ -80,7 +80,7 @@ class Scanner(DataWrangler):
             return
 
         market_data = self.market_data(snapshot_tickers)
-        tickers = market_data.ticker.unique()
+        tickers = market_data.ticker.sort_values().unique()
 
         close_data = market_data.pivot(index='date', columns='ticker', values='close')
         close_data = close_data[-self.avg_diff_length:]
@@ -124,4 +124,6 @@ if __name__ == '__main__':
     s.min_vol = 100
     s.industry = 'SERVICES-AUTOMOTIVE REPAIR, SERVICES & PARKING'
     x = s.get_pairs
-    print(x)
+    print(x[x.B == 'MNRO'])
+    '[A, B, C]'
+

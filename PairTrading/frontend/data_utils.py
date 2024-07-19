@@ -5,6 +5,18 @@ from datetime import date
 
 class DataUtils():
     @staticmethod
+    def in_watchlist(tickers: list):
+        pass
+        #get pair
+        #return python list
+
+    def get_all_pair_from_watchlist():
+        pass
+
+    def get_unique_watchlist():
+        pass
+
+    @staticmethod
     def get_average(ticker: str, column_name: str, period=30) -> float:
         return DataWrangler().market_data([ticker])[column_name].rolling(period).mean().to_list()[-1]
     
