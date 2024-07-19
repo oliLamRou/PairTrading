@@ -124,4 +124,6 @@ if __name__ == '__main__':
     s.min_vol = 100
     s.industry = 'SERVICES-AUTOMOTIVE REPAIR, SERVICES & PARKING'
     x = s.get_pairs
-    print(x)
+    print(x[x.B == 'MNRO'])
+    '[A, B, C]'
+
