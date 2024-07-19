@@ -7,7 +7,9 @@ WATCHLIST_COLUMNS = {
     'A': ['A', 'TEXT'],
     'B': ['B', 'TEXT'],
     'pair_order': ['pair_order', 'INTERGER'],  
-    'watchlist': ['watchlist', 'TEXT'] 
+    'watchlist': ['watchlist', 'INTERGER'],
+    'hedge_ratio': ['hedge_ratio', 'REAL'],
+    'notes': ['notes', 'TEXT']
 }
 
 TICKER_RANK_COLUMNS = {
