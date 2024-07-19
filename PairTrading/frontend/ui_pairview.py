@@ -5,7 +5,7 @@ from PairTrading.frontend.data_utils import DataUtils as du
 from PairTrading.backend.scanner import Scanner
 
 import pandas as pd
-from dash import Dash, html, dcc, Input, Output 
+from dash import Dash, html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc  
 
 class PairView:
@@ -13,6 +13,11 @@ class PairView:
         self.ticker_a = ticker_a
         self.ticker_b = ticker_b
         self.show_header = show_header
+        
+        dw = DataWrangler()
+        self.pair_info = dw.get_pair_info([ticker_a, ticker_b]).to_dict()
+        #print("pair info: ", self.pair_info)
+
         self.ratio = 0.61
         self.diff_average = diff_average
         self.market_data = None
@@ -35,7 +40,39 @@ class PairView:
         self.chart_pairPrice.set_callback_app(self.callback_app)
         self.chart_compare.set_callback_app(self.callback_app)
         self.chart_ratio.set_callback_app(self.callback_app)
+
+        @app.callback( Output('dummy-output', 'data'), Input("toggle-watchlist", "value"), prevent_initial_call=True)
+        def toggle_watchlist(value):
+            if value:
+                self.update_pair_info({"watchlist" : 1})
+            else:
+                self.update_pair_info({"watchlist" : 0})
+
+        @app.callback( 
+            Output('save-info-button', "value"), 
+            Input("save-info-button", "n_clicks"), 
+            State("toggle-reverse", "value"), 
+            prevent_initial_call=True
+        )
+        def save_button(n_clicks, reverse):
+
+            print("sssssssssave", n_clicks, reverse)
+
+            #print(ctx.inputs)
+
+            """ if value:
+                self.update_pair_info({"watchlist" : 1})
+            else:
+                self.update_pair_info({"watchlist" : 0}) """
+
+    def update_pair_info(self, info: dict):
+        dw = DataWrangler()
+        return dw.update_pair_info([self.ticker_a, self.ticker_b], info)
         
+    def get_pair_info(self):
+        dw = DataWrangler()
+        return dw.get_pair_info([self.ticker_a, self.ticker_b])
+    
     def build(self):
         print("build")
 
@@ -43,9 +80,8 @@ class PairView:
         
         df_a = self.market_data[self.market_data.ticker == self.ticker_a]
         df_b = self.market_data[self.market_data.ticker == self.ticker_b]
-        print(df_a)
-
-        #ddf = df_a.copy()
+        
+        #Pair Price Chart
         ddf = pd.DataFrame()
 
         #if not reverse:
@@ -58,7 +94,6 @@ class PairView:
         ddf["high"] = ddf["high_a"] - ddf["high_b"] * self.ratio
         ddf["low"] = ddf["low_a"] - ddf["low_b"] * self.ratio
 
-        #Pair Price Chart
         self.chart_pairPrice.data = ddf
 
         #Pair Compare Chart
@@ -74,21 +109,26 @@ class PairView:
             pair_price = du.get_last_price(self.ticker_a) - (du.get_last_price(self.ticker_b) * self.ratio)
         else:
             pair_price = du.get_last_price(self.ticker_b) - (du.get_last_price(self.ticker_a) * self.ratio)
-
+        
+        print(self.get_pair_info()['pair_order'])
+              
         detail_tab = html.Div([
-            html.P(f"Pair Price: {pair_price}"),
-            html.P("Average Difference: xxxx"),
-            html.P(f"{self.ticker_a} Dollar Volume Average: "),
-            html.P(f"{self.ticker_b} Dollar Volume Average: "),
+            dcc.Store(id='dummy-output'),
+            dcc.Store(id='dummy-output-save'),
+            html.P([f"Pair Price: {pair_price}",html.Br(),
+                "Average Difference: xxxx",html.Br(),
+                f"{self.ticker_a} Dollar Volume Average: ",html.Br(),
+                f"{self.ticker_b} Dollar Volume Average: ",html.Br(),
+            ]),
+
             html.Br(),
-            dbc.Checklist(options=[{"label": "Watchlist", "value": 1},{"label": "Reverse Order", "value": 2},],value=[],id="switches-input",inline=False,switch=True,),
-            dbc.InputGroup([dbc.InputGroupText("Hedge Ratio"), dbc.Input(placeholder="Ratio", type="number", step=0.01, value=self.ratio)], className="mb-3"),
+            dbc.Checklist(id="toggle-watchlist", options=[{"label": "Watchlist", "value": 1}],value=[self.get_pair_info().get('watchlist', 0)],switch=True,),
+            dbc.Checklist(id="toggle-reverse", options=[{"label": "Reverse Order", "value": 1}],value=[],switch=True,),
+            dbc.InputGroup([dbc.InputGroupText("Hedge Ratio"), dbc.Input(placeholder="Ratio", type="number", step=0.01, value=self.get_pair_info().get('hedge_ratio', None))], className="mb-3"),
             dbc.InputGroup([dbc.InputGroupText("Notes"), dbc.Textarea()], className="mb-3"),
-            #html.P(f"Pair Last Price: {df_a.iloc[-1:].close.unique()[0]}") ,
             
-            
-            dbc.Button("Reset", color="primary", disabled=True),
-            dbc.Button("Save", color="primary", disabled=True),
+            #dbc.Button("Reset", color="primary", disabled=True),
+            dbc.Button("Save", id="save-info-button", color="primary", n_clicks=0),
         ], style={"margin" : "2%"})
 
         trades_tab = dbc.Card(
@@ -98,7 +138,6 @@ class PairView:
         )
 
         #pair details card
-
         detail_card = [
             dbc.Card([
                 dbc.CardHeader(html.H4(f"{self.ticker_a}-{self.ticker_b} Details", className="card-title")),
