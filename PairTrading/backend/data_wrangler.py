@@ -169,8 +169,6 @@ class DataWrangler(DataBase, Polygon):
             for result in results:
                 self.__polygon_db.add_row(self.MARKET_SNAPSHOT_TABLE_NAME, result)
 
-            self.__polygon_db._commit
-
         if self._market_snapshot.empty:
             self._market_snapshot = self.__polygon_db.get_table(self.MARKET_SNAPSHOT_TABLE_NAME)
 
@@ -201,8 +199,6 @@ class DataWrangler(DataBase, Polygon):
                 self.__polygon_db.update_row(self.TICKER_INFO_TABLE_NAME, results, 'ticker', ticker)
             else:
                 self.__polygon_db.add_row(self.TICKER_INFO_TABLE_NAME, results)
-            
-            self.__polygon_db._commit
 
             #Reload table
             self._all_ticker_info = self.__polygon_db.get_table(self.TICKER_INFO_TABLE_NAME)
@@ -243,8 +239,6 @@ class DataWrangler(DataBase, Polygon):
             print(f'--> Adding {ticker} to {self.FAILED_TICKER_TABLE_NAME}')
             self.__yfinance_db.add_row(self.FAILED_TICKER_TABLE_NAME, {'ticker': ticker})
 
-        self.__yfinance_db._commit
-
     def market_data(self,
             tickers: list,
             timespan: str = 'd',
@@ -257,8 +251,6 @@ class DataWrangler(DataBase, Polygon):
             df.date = pd.to_datetime(df.date)
             return df
         
-
-
         #When update skip this part so all tickers will be updated
         to_download = tickers
         if not update:
@@ -288,8 +280,6 @@ class DataWrangler(DataBase, Polygon):
             
             self.write_market_data(ticker_df)
 
-        self.__yfinance_db._commit
-
         self.manage_wrong_tickers(tickers)
         return get_rows_with_date_format(tickers)
 
@@ -301,9 +291,5 @@ if __name__ == '__main__':
         'pair_order': 1,
         'watchlist': 'default'
     }
-    # # dw.add_to_watchlist(pair_info)
-    # print(dw.list_watchlist())
-    # # dw.set_ticker_rank("AAPL", 4)
-    # # print(dw.ticker_rank('AAPL'))
-    dw.set_ticker_rank("AAPL", 1)
-    print(dw.ticker_rank("AAPL"))
+    dw.add_to_watchlist(pair_info)
+    print(dw.list_watchlist())
