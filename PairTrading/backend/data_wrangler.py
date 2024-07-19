@@ -37,9 +37,9 @@ class DataWrangler(DataBase, Polygon):
 
     def __init__(self):
         Polygon.__init__(self)
-        self.__polygon_db = DataBase(sqlite3.connect(self.POLYGON_DB))
-        self.__yfinance_db = DataBase(sqlite3.connect(self.YFINANCE_DB))
-        self.__user_db = DataBase(sqlite3.connect(self.USER_DB))
+        self.__polygon_db = DataBase(sqlite3.connect(self.POLYGON_DB, check_same_thread=False))
+        self.__yfinance_db = DataBase(sqlite3.connect(self.YFINANCE_DB, check_same_thread=False))
+        self.__user_db = DataBase(sqlite3.connect(self.USER_DB, check_same_thread=False))
 
         #Properties
         self._all_ticker_info = pd.DataFrame()
