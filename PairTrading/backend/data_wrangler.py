@@ -128,7 +128,11 @@ class DataWrangler(DataBase, Polygon):
 
     def get_pair_info(self, tickers: list) -> pd.Series():
         self.is_good_pair(tickers)
-        return self.__user_db.get_rows(self.PAIR_INFO_TABLE_NAME, 'pair', ['__'.join(tickers)])
+        df = self.__user_db.get_rows(self.PAIR_INFO_TABLE_NAME, 'pair', ['__'.join(tickers)])
+        if df.empty:
+            return pd.Series()
+
+        return df.iloc[0]
 
     def update_pair_info(self, tickers: list, pair_info: dict):
         self.is_good_pair(tickers)
@@ -145,7 +149,7 @@ class DataWrangler(DataBase, Polygon):
             print(f'Adding: {pair_info["pair"]}')
             self.__user_db.add_row(self.PAIR_INFO_TABLE_NAME, pair_info)
 
-        return get_pair_info(tickers)
+        return self.get_pair_info(tickers)
 
     def set_ticker_rank(self, ticker, rank):
         values = _constant.TICKER_RANK_COLUMNS.copy()
@@ -294,7 +298,8 @@ if __name__ == '__main__':
     dw = DataWrangler()
     pair_info = {
         'pair_order': 1,
-        'watchlist': 'default'
+        'watchlist': 'default',
+        'hedge_ratio': 0.1
     }
-    df = dw.update_pair_info(['AAPL', 'MSTR'], pair_info)
-    print(dw.get_pair_info(['AAPL', 'MSTR']))
+    df = dw.update_pair_info(['AAPL', 'NVDA'], pair_info)
+    print(df.to_dict())
