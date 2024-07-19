@@ -198,8 +198,8 @@ class DashChart:
         yaxis = self.dataKeys['Close']
         
         if normalize:
-            self._data["normalized_close"] = DataUtils.normalize_minmax(self._data[self.dataKeys['Close']])
-            self.compareData["normalized_close"] = DataUtils.normalize_minmax(self.compareData[self.dataKeys['Close']])
+            self._data["normalized_close"] = DataUtils.normalize_minmax(self._data[self.dataKeys['Close']]).copy()
+            self.compareData["normalized_close"] = DataUtils.normalize_minmax(self.compareData[self.dataKeys['Close']]).copy()
             yaxis = "normalized_close"
 
         else:
