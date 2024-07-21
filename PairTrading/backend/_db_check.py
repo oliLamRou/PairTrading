@@ -22,32 +22,15 @@ s = Scanner()
 def polygon(update_snapshot=False, update_ticker_info=False):
 	#Polygon
 	polygon_tables = s._DataWrangler__polygon_db.list_tables()
-	
-	#Snapshot
-	if update_snapshot:
-		s.market_snapshot(update=True)
 
-	print(
-		'Polygon Tables:\n', 
-		polygon_tables, 
-		'\n')
-
-	#Ticker Info
-	if update_ticker_info:
-		pass
-
-	print(
-		'-> Ticker Info Sample\n',
-		s.all_ticker_info.sample(5),
-		'\n'
-	)
-
-	#SIC Code
-	print(
-		'-> SIC Code Sample\n',
-		s.sic_code.sample(5),
-		'\n'
-	)	
+	for table_name in polygon_tables.name.to_list():
+		df = s._DataWrangler__polygon_db.get_table(table_name)
+		print(
+			f'-> {table_name} head\n',
+			df.columns.to_list(), '\n',
+	        df.head(),
+			'\n'
+		)
 
 def yahoo():
 	yf_tables = s._DataWrangler__yfinance_db.list_tables()
@@ -68,12 +51,14 @@ def user():
 	user_tables = s._DataWrangler__user_db.list_tables()
 	print('User Tables:\n', user_tables, '\n')
 
-	#Ticker Rank
-	print(
-		'-> User Rank Sample\n',
-        s._DataWrangler__user_db.get_table('ticker_rank'),
-		'\n'
-	)
+	for table_name in user_tables.name.to_list():
+		df = s._DataWrangler__user_db.get_table(table_name)
+		print(
+			f'-> {table_name} head\n',
+			df.columns.to_list(), '\n',
+	        s._DataWrangler__user_db.get_table(table_name).head(),
+			'\n'
+		)
 
 polygon()
 yahoo()

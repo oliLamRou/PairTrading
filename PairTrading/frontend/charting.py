@@ -154,7 +154,6 @@ class DashChart:
             pd.options.mode.copy_on_write = True
             self._data["normalized_close"] = DataUtils.normalize_minmax(self._data[self.dataKeys['Close']])
             self.compareData["normalized_close"] = DataUtils.normalize_minmax(self.compareData[self.dataKeys['Close']])
-
             yaxis = "normalized_close"
 
         else:
