@@ -8,6 +8,7 @@ from PairTrading.src import _constant
 from PairTrading.backend import _db_constant
 
 #DATA HANDLER
+
 class DataWrangler(DataBase):
     def __init__(self):
         self.__polygon_db = DataBase(_db_constant.POLYGON_DB)

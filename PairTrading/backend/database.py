@@ -52,6 +52,12 @@ class DataBase:
 
         conn.commit()
         conn.close()
+        
+    def _read_sql_query(self, query):
+        conn = sqlite3.connect(self.path)
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        return df
 
     @property
     def _vacuum(self):
@@ -105,6 +111,11 @@ class DataBase:
 
 if __name__ == '__main__':
     from PairTrading.src import _constant
-    db = DataBase('../../data/local/user.db')
-    # db._drop_table('watchlist')
+    db = DataBase('../../data/polygon.db')
+    pair_info = {
+        'A': 'AAPL',
+        'B': 'MSTR'
+    }
+    # db.add_row('watchlist', pair_info)
+    print(db.get_table('ticker_details'))
 
