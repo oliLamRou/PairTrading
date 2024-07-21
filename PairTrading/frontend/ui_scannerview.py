@@ -38,7 +38,6 @@ class ScannerView:
             self.industry_dropdown.append({"label": f"({count}) {s}", "value": i+2})
 
     def set_callback_app(self, app):
-        print("set callback app")
         self.callback_app = app
         self.pair_view.set_callback_app(app)
         self.pairview_layout = self.pair_view.get_layout()
