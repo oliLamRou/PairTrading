@@ -38,7 +38,6 @@ class ScannerView:
             self.industry_dropdown.append({"label": f"({count}) {s}", "value": i+2})
 
     def set_callback_app(self, app):
-        print("set callback app")
         self.callback_app = app
         self.pair_view.set_callback_app(app)
         self.pairview_layout = self.pair_view.get_layout()
@@ -66,7 +65,7 @@ class ScannerView:
             Output("pairview-content", "children"),
             Input({"type": "open-details", "index": ALL}, "n_clicks"),
             State("modal-details", "is_open"),
-        )            
+        )
         def toggle_details(n, is_open):
             print("toggle")
             for p in ctx.triggered:
@@ -81,12 +80,8 @@ class ScannerView:
                     self.pair_view.ticker_b = ticker_b
                     self.pair_view.market_data = self.scanner.market_data([ticker_a, ticker_b])
                     return not is_open, html.H6(f"{ticker_a}, {ticker_b} - Pair View"), self.pair_view.get_layout()
-
-            """ self.pair_view.ticker_a = ticker_a
-            self.pair_view.ticker_b = ticker_b
-            self.pair_view.market_data = self.scanner.market_data([ticker_a, ticker_b])
-            return is_open, html.H6(f"{ticker_a}, {ticker_b} - Pair View"), self.pair_view.get_layout() """        
-            return is_open, "nothing"
+     
+            return is_open, "nothing", "nothing"
 
     
     def get_layout(self):

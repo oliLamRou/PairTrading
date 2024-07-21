@@ -24,6 +24,7 @@ class DataWrangler(DataBase, Polygon):
 
     #User
     TICKER_RANK_TABLE_NAME = 'ticker_rank'
+    PAIR_INFO_TABLE_NAME = 'pair_info'
 
     #Yahoo
     MARKET_DATA_TABLE_NAME = 'market_data'
@@ -37,9 +38,9 @@ class DataWrangler(DataBase, Polygon):
 
     def __init__(self):
         Polygon.__init__(self)
-        self.__polygon_db = DataBase(sqlite3.connect(self.POLYGON_DB))
-        self.__yfinance_db = DataBase(sqlite3.connect(self.YFINANCE_DB))
-        self.__user_db = DataBase(sqlite3.connect(self.USER_DB))
+        self.__polygon_db = DataBase(self.POLYGON_DB)
+        self.__yfinance_db = DataBase(self.YFINANCE_DB)
+        self.__user_db = DataBase(self.USER_DB)
 
         #Properties
         self._all_ticker_info = pd.DataFrame()
@@ -56,6 +57,11 @@ class DataWrangler(DataBase, Polygon):
         self.__user_db.setup_table(
             self.TICKER_RANK_TABLE_NAME,
             self._renamed_columns(_constant.TICKER_RANK_COLUMNS)
+        )
+
+        self.__user_db.setup_table(
+            self.PAIR_INFO_TABLE_NAME,
+            self._renamed_columns(_constant.PAIR_INFO_COLUMNS)
         )
 
     def setup_yfinance(self):
@@ -105,6 +111,7 @@ class DataWrangler(DataBase, Polygon):
 
     @property
     def all_market_data(self) -> pd.DataFrame:
+        warnings.warn(message=f'THIS WILL BE REMOVE', category=Warning, stacklevel=2)
         if self._all_market_data.empty:
             self._all_market_data = self.__yfinance_db.get_table(self.MARKET_DATA_TABLE_NAME)
 
@@ -112,6 +119,37 @@ class DataWrangler(DataBase, Polygon):
 
     def _renamed_columns(self, columns: dict) -> dict:
          return {v[0]: v[1] for v in columns.values()}
+
+
+    #USER
+    def is_good_pair(self, tickers: list):
+        if type(tickers) != list or len(tickers) != 2:
+            raise ValueError(f'tickers:({tickers}) must be a list of 2 elements')
+
+    def get_pair_info(self, tickers: list) -> pd.Series():
+        self.is_good_pair(tickers)
+        df = self.__user_db.get_rows(self.PAIR_INFO_TABLE_NAME, 'pair', ['__'.join(tickers)])
+        if df.empty:
+            return pd.Series()
+
+        return df.iloc[0]
+
+    def update_pair_info(self, tickers: list, pair_info: dict):
+        self.is_good_pair(tickers)
+
+        tickers.sort()
+        pair_info['A'] = tickers[0]
+        pair_info['B'] = tickers[1]
+        pair_info['pair'] = '__'.join(tickers)
+
+        if self.__user_db.has_value(self.PAIR_INFO_TABLE_NAME, 'pair', pair_info['pair']):
+            print(f'Updating: {pair_info["pair"]}')
+            self.__user_db.update_row(self.PAIR_INFO_TABLE_NAME, pair_info, 'pair', pair_info['pair'])
+        else:
+            print(f'Adding: {pair_info["pair"]}')
+            self.__user_db.add_row(self.PAIR_INFO_TABLE_NAME, pair_info)
+
+        return self.get_pair_info(tickers)
 
     def set_ticker_rank(self, ticker, rank):
         values = _constant.TICKER_RANK_COLUMNS.copy()
@@ -129,6 +167,7 @@ class DataWrangler(DataBase, Polygon):
 
         return df['rank'].iloc[0]
 
+    #MARKET
     def market_snapshot(self,
             update: bool = False
         ) -> pd.DataFrame():
@@ -140,8 +179,6 @@ class DataWrangler(DataBase, Polygon):
             results = self.grouped_daily()
             for result in results:
                 self.__polygon_db.add_row(self.MARKET_SNAPSHOT_TABLE_NAME, result)
-
-            self.__polygon_db._commit
 
         if self._market_snapshot.empty:
             self._market_snapshot = self.__polygon_db.get_table(self.MARKET_SNAPSHOT_TABLE_NAME)
@@ -173,8 +210,6 @@ class DataWrangler(DataBase, Polygon):
                 self.__polygon_db.update_row(self.TICKER_INFO_TABLE_NAME, results, 'ticker', ticker)
             else:
                 self.__polygon_db.add_row(self.TICKER_INFO_TABLE_NAME, results)
-            
-            self.__polygon_db._commit
 
             #Reload table
             self._all_ticker_info = self.__polygon_db.get_table(self.TICKER_INFO_TABLE_NAME)
@@ -215,8 +250,6 @@ class DataWrangler(DataBase, Polygon):
             print(f'--> Adding {ticker} to {self.FAILED_TICKER_TABLE_NAME}')
             self.__yfinance_db.add_row(self.FAILED_TICKER_TABLE_NAME, {'ticker': ticker})
 
-        self.__yfinance_db._commit
-
     def market_data(self,
             tickers: list,
             timespan: str = 'd',
@@ -229,8 +262,6 @@ class DataWrangler(DataBase, Polygon):
             df.date = pd.to_datetime(df.date)
             return df
         
-
-
         #When update skip this part so all tickers will be updated
         to_download = tickers
         if not update:
@@ -260,18 +291,15 @@ class DataWrangler(DataBase, Polygon):
             
             self.write_market_data(ticker_df)
 
-        self.__yfinance_db._commit
-
         self.manage_wrong_tickers(tickers)
         return get_rows_with_date_format(tickers)
 
 if __name__ == '__main__':
     dw = DataWrangler()
     pair_info = {
-        'A': 'AAPL',
-        'B': 'MSTR',
         'pair_order': 1,
-        'watchlist': 'default'
+        'watchlist': 'default',
+        'hedge_ratio': 0.1
     }
-    dw.add_to_watchlist(pair_info)
-    print(dw.list_watchlist())
+    df = dw.update_pair_info(['AAPL', 'NVDA'], pair_info)
+    print(df.to_dict())
