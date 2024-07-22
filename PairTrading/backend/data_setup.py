@@ -24,6 +24,16 @@ class DataSetup:
             self._renamed_columns(_constant.PAIR_INFO_COLUMNS)
         )
 
+        self.__user_db.setup_table(
+            _db_constant.WATCHLIST_TABLE_NAME,
+            self._renamed_columns(_constant.WATCHLIST_COLUMNS)
+        )
+
+        self.__user_db.setup_table(
+            _db_constant.TRADES_TABLE_NAME,
+            self._renamed_columns(_constant.TRADES_COLUMNS)
+        )
+
     def setup_yfinance(self):
         #market_data
         self.__yfinance_db.setup_table(

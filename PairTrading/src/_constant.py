@@ -2,6 +2,20 @@ from PairTrading.src.utils import PROJECT_ROOT
 
 CONFIG = (PROJECT_ROOT / '.config.ini').resolve()
 
+TRADES_COLUMNS = {
+    'ticker': ['ticker', 'TEXT'],
+    'buy': ['buy', 'REAL']
+}
+
+#This can be use for single stock or pair I guess ?
+WATCHLIST_COLUMNS = {
+    'pair': ['pair', 'TEXT'],
+    'A': ['A', 'TEXT'],
+    'B': ['B', 'TEXT'],
+    'watchlist': ['watchlist', 'TEXT'],
+    'notes': ['notes', 'TEXT']
+}
+
 PAIR_INFO_COLUMNS = {
     'pair': ['pair', 'TEXT'],
     'A': ['A', 'TEXT'],
