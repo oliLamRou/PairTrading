@@ -1,12 +1,14 @@
 import pandas as pd
 import warnings
 
+from PairTrading.backend.polygon import Polygon
 from PairTrading.backend.database import DataBase
 from PairTrading.src import _constant
 from PairTrading.backend import _db_constant
 
-class PolygonWrangler:
+class PolygonWrangler(Polygon):
     def __init__(self):
+        Polygon.__init__(self)
         self.__polygon_db = DataBase(_db_constant.POLYGON_DB)
 
         #Properties
