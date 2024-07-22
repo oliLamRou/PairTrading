@@ -6,7 +6,7 @@ PAIR_INFO_COLUMNS = {
     'pair': ['pair', 'TEXT'],
     'A': ['A', 'TEXT'],
     'B': ['B', 'TEXT'],
-    'pair_order': ['pair_order', 'INTERGER'],  
+    'reverse': ['reverse', 'INTERGER'],  
     'watchlist': ['watchlist', 'INTERGER'],
     'hedge_ratio': ['hedge_ratio', 'REAL'],
     'notes': ['notes', 'TEXT']

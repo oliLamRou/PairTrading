@@ -53,16 +53,15 @@ class DashChart:
         @app.callback(
             Output(f'{self.name}-graph', "figure"),
             self.callback_inputs,
-            #prevent_initial_call='initial_duplicate'
         )
         def appCallback(*args):
-            print(ctx.inputs_list)
+            #print(ctx.inputs_list)
 
+            #Execute Pre-callbacks
             for f in self.pre_callback_functions:
                 f()
 
-            #time.sleep(0.8)
-
+            #Callbacks
             if self.chartType == "candlestick":
                 show_bbands = [item["value"] for item in ctx.inputs_list if item["id"] == f'{self.name}-toggle-bbands'][0]
                 fig = self.chart_candlestick_callback(show_bbands)
@@ -77,14 +76,13 @@ class DashChart:
 
                 fig = self.chart_compare_callback(normalize, scale, offset)
 
+            #Execute post-callbacks
             for f in self.post_callback_functions:
                 f()
 
             return fig
     
     def chart_candlestick_callback(self, value):
-        print("chart_candlestick_callback")
-        #print(self._data)
         bbands = self.calculate_bollinger_bands(17, 3)
         
         figures = [

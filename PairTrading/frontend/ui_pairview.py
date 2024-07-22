@@ -15,7 +15,7 @@ class PairView:
         self.ticker_b = ticker_b
         self.show_header = show_header
 
-        self.pair_info = self.get_pair_info().to_dict()
+        self.pair_info = self.get_pair_info()
         self.updated_pair_info = {}
 
         #self.diff_average = diff_average
@@ -38,17 +38,19 @@ class PairView:
         self.callback_app = app
 
         #pair price chart
-        #self.chart_pairPrice.callback_inputs.append(Input("toggle-reverse", "value"))
-        #self.chart_pairPrice.callback_inputs.append(Input("input-ratio", "value"))
         self.chart_pairPrice.callback_inputs.append(Input('force-update', 'value'))
         self.chart_pairPrice.callback_inputs.append(Input("save-info-button", "n_clicks"))
-        self.chart_pairPrice.pre_callback_functions.append(self.precall)
         self.chart_pairPrice.pre_callback_functions.append(self.update_pair_price_df)
-        self.chart_pairPrice.post_callback_functions.append(self.postcall)
         self.chart_pairPrice.set_callback_app(self.callback_app)
-
-        self.chart_compare.set_callback_app(self.callback_app)
+        
+        #pair ratio chart
+        self.chart_ratio.callback_inputs.append(Input('force-update', 'value'))
+        self.chart_ratio.callback_inputs.append(Input("save-info-button", "n_clicks"))
+        self.chart_ratio.pre_callback_functions.append(self.update_pair_ratio_df)
         self.chart_ratio.set_callback_app(self.callback_app)
+
+        #Compare chart
+        self.chart_compare.set_callback_app(self.callback_app)
 
         @app.callback( Output('dummy-output', 'data', allow_duplicate=True), Input("toggle-watchlist", "value"), prevent_initial_call=True)
         def toggle_watchlist(value):
@@ -64,45 +66,24 @@ class PairView:
                 Input("input-ratio", "value")
             ]
         )
-        def toggle_reverse(reverse, ratio):
-            print("update pair price content")
-            print(reverse, ratio)
-
+        def update_reverse_and_ratio(reverse, ratio):
             if not reverse and not ratio:
                 return f"Pair price: ---"
 
             if 1 in reverse:
-
-                self.updated_pair_info["pair_order"] = 1
-                print("reverse")
-                
+                self.updated_pair_info["reverse"] = 1
             else:
-                #update_dict["pair_order"] = 0
-                self.updated_pair_info["pair_order"] = 0
-                #self.reverse = 0
-                print("Not reversed")
+                self.updated_pair_info["reverse"] = 0
 
             if ratio:
                 self.updated_pair_info["hedge_ratio"] = ratio
-                #update_dict["hedge_ratio"] = ratio
-                #self.ratio = ratio
 
-            #self.update_pair_info(update_dict)
             return f"Pair price: {self.get_pair_price()}"
         
         @app.callback( Output('dummy-output', 'data', allow_duplicate=True), Input("input-notes", "value"), prevent_initial_call=True)
         def update_notes(value):
             if value:
-                self.update_pair_info({"notes" : value})
-
-        # @app.callback( 
-        #     Output('save-info-button', "value"),
-        #     Input("save-info-button", "n_clicks"), 
-        #     prevent_initial_call=True
-        # )
-        # def save_button(n_clicks):
-        #     print("sssssssssave", n_clicks)
-        #     self.update_pair_info(self.pair_info)
+                self.updated_pair_info["notes"] = value
 
         @app.callback(
             Output('force-update', 'value'),
@@ -118,23 +99,20 @@ class PairView:
 
     def get_pair_price(self):
         ratio = self.updated_pair_info.get("hedge_ratio", self.updated_pair_info.get("hedge_ratio"))
-        if self.updated_pair_info["pair_order"]:
+        if self.updated_pair_info["reverse"]:
             pair_price = du.get_last_price(self.ticker_b) - (du.get_last_price(self.ticker_a) * ratio)
         else:
             pair_price = du.get_last_price(self.ticker_a) - (du.get_last_price(self.ticker_b) * ratio)
         return pair_price
 
     def update_pair_price_df(self, reverse=False):
-        print("update DF")
         df_a = self.market_data[self.market_data.ticker == self.ticker_a]
         df_b = self.market_data[self.market_data.ticker == self.ticker_b]
         
         ddf = pd.DataFrame()
 
-        #ddf = self.chart_pairPrice._data
-        rev = self.get_pair_info().get("pair_order", 0)
+        rev = self.get_pair_info().get("reverse", 0)
         ratio = self.get_pair_info().get("hedge_ratio", 0)
-        print("REVERSE: ", rev)
 
         if rev == 1:
             ddf = df_a.merge(df_b, on='date', suffixes=['_b', '_a'])
@@ -146,48 +124,51 @@ class PairView:
         ddf["high"] = ddf["high_a"] - ddf["high_b"] * ratio
         ddf["low"] = ddf["low_a"] - ddf["low_b"] * ratio
 
-        #print(ddf)
         self.chart_pairPrice._data = ddf
 
-        print("finished update DF")
+    def update_pair_ratio_df(self):
+        df_a = self.market_data[self.market_data.ticker == self.ticker_a]
+        df_b = self.market_data[self.market_data.ticker == self.ticker_b]
 
-    def precall(self): 
-        print()
-        print("Pre-callback")
+        rev = self.get_pair_info().get("reverse", 0)
+        if rev:
+            ratio_df = (df_b.set_index("date").close / df_a.set_index("date").close).reset_index()
+        else:
+            ratio_df = (df_a.set_index("date").close / df_b.set_index("date").close).reset_index()
 
-    def postcall(self): 
-        print("Post-callback")
-
+        self.chart_ratio.data = ratio_df
+        return
+    
     def update_pair_info(self, info: dict):
         dw = DataWrangler()
         return dw.update_pair_info([self.ticker_a, self.ticker_b], info)
         
     def get_pair_info(self):
         dw = DataWrangler()
-        return dw.get_pair_info([self.ticker_a, self.ticker_b])
+        pair_info = dw.get_pair_info([self.ticker_a, self.ticker_b]).fillna(0)
+
+        #Default values
+        pair_info["hedge_ratio"] = 1 if pair_info["hedge_ratio"] is None else pair_info["hedge_ratio"]
+        pair_info["reverse"] = 0 if pair_info["reverse"] is None else pair_info["reverse"]
+        pair_info["watchlist"] = 0 if pair_info["reverse"] is None else pair_info["watchlist"]
+
+        return pair_info
     
     def get_layout(self):
-        
         df_a = self.market_data[self.market_data.ticker == self.ticker_a]
         df_b = self.market_data[self.market_data.ticker == self.ticker_b]
         
-        #Pair Price Chart
-        print("Get Layout")
-        #self.update_pair_price_df(self.pair_info.get("pair_order", 0)) pair_info.get("ratio")
         self.update_pair_price_df()
+        self.update_pair_ratio_df()
 
         #Pair Compare Chart
         self.chart_compare.data = df_a
         self.chart_compare.compareData = df_b
 
-        #Pair Ratio Chart
-        ratio_df = (df_a.set_index("date").close / df_b.set_index("date").close).reset_index()
-        self.chart_ratio.data = ratio_df
-            
         detail_tab = [
             #html.Div(id="pair-price-content"),
             html.P([
-                html.Div(html.H6(id="pair-price-content")),
+                html.Div(html.H4(id="pair-price-content")),
                 "Average Difference: xxxx",html.Br(),
                 f"{self.ticker_a} Dollar Volume Average: ",html.Br(),
                 f"{self.ticker_b} Dollar Volume Average: ",html.Br(),
@@ -196,11 +177,9 @@ class PairView:
                 dcc.Store(id='dummy-output'),
                 html.Br(),
                 dbc.Checklist(id="toggle-watchlist", options=[{"label": "Watchlist", "value": 1}],value=[self.get_pair_info().get('watchlist', 0)],switch=True,),
-                dbc.Checklist(id="toggle-reverse", options=[{"label": "Reverse Order", "value": 1}],value=[self.get_pair_info().get('pair_order', [])],switch=True,),
+                dbc.Checklist(id="toggle-reverse", options=[{"label": "Reverse Order", "value": 1}],value=[self.get_pair_info().get('reverse', [])],switch=True,),
                 dbc.InputGroup([dbc.InputGroupText("Hedge Ratio"), dbc.Input(id="input-ratio",placeholder="Ratio", type="number", step=0.01, value=self.pair_info.get("hedge_ratio"))], className="mb-3"),
                 dbc.InputGroup([dbc.InputGroupText("Notes"), dbc.Textarea(id="input-notes", value=self.get_pair_info().get('notes', []))], className="mb-3"),
-                
-                #dbc.Button("Reset", color="primary", disabled=True),
                 dbc.Button("Save", id="save-info-button", color="primary", n_clicks=0),
                 dcc.Input(id='force-update', type='hidden', value=0)
             ], style={"margin" : "2%"})
@@ -212,13 +191,15 @@ class PairView:
             ),
         )
         
-
         #pair details card
-        detail_card = dbc.Card(
+        #header_text = f"{self.ticker_b} - {self.ticker_a}" if self.pair_info.get("reverse", 0) == 1 else f"{self.ticker_a} - {self.ticker_b}"
+        header_text = f"{self.ticker_a} - {self.ticker_b}"
+        detail_card = dbc.Card([
+            dbc.CardHeader(html.H6(header_text, className="card-title")),
             dbc.CardBody(
                 detail_tab
             )
-        )
+        ])
         #[
             # dbc.Card([
             #     dbc.CardHeader(html.H4(f"{self.ticker_a}-{self.ticker_b} Details", className="card-title")),
@@ -255,7 +236,6 @@ class PairView:
         ]
        
         layout_elements = [
-            #dbc.Card(chart_card)
             html.Div(chart_card)
         ]
 
