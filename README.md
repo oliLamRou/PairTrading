@@ -21,3 +21,9 @@
 2. pairView with feature: 
 2.1 side bar avg_diff, dollar_vol_avg, reverse, watchlist(0,1), hedge_ratio, notes, pair_price
 2.2 ratio chart reverse
+
+####
+Step 2. 
+
+This guy do high freq trading on interactive broker
+https://github.com/jamesmawm/High-Frequency-Trading-Model-with-IB/tree/master
