@@ -19,8 +19,8 @@ class ScannerView:
         #self.pair_view = PairView("LNT", "WEC")
         #self.pair_view.market_data = self.scanner.market_data(["LNT", "WEC"])
         
-        self.pair_view = PairView("LNT", "WEC")
-        self.pair_view.market_data = self.scanner.market_data(["LNT", "WEC"])
+        self.pair_view = PairView()
+       #self.pair_view.market_data = self.scanner.market_data(["LNT", "WEC"])
         self.pair_view.set_callback_app(app)
         
         #Preload chart objects
@@ -80,8 +80,7 @@ class ScannerView:
                 #print(invoker_index, self.pairs_list[invoker_index])
                 
                 if n[invoker_index]:
-                    self.pair_view.ticker_a = ticker_a
-                    self.pair_view.ticker_b = ticker_b
+                    self.pair_view.set_tickers(ticker_a, ticker_b)
                     self.pair_view.market_data = self.scanner.market_data([ticker_a, ticker_b])
                     self.pairview_layout = self.pair_view.get_layout()
                     return not is_open, html.H6(f"{ticker_a}, {ticker_b} - Pair View"), self.pair_view.get_layout()

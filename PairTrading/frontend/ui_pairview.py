@@ -10,7 +10,7 @@ from dash import Dash, html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc  
 
 class PairView:
-    def __init__(self, ticker_a, ticker_b, show_header=True):
+    def __init__(self, ticker_a="", ticker_b="", show_header=True):
         self.pair_name = f"{ticker_a}__{ticker_b}"
         self.ticker_a = ticker_a
         self.ticker_b = ticker_b
@@ -35,6 +35,13 @@ class PairView:
         self.chart_ratio = DashChart(f"{self.ticker_a}-{self.ticker_b}-ratio-chart", "line")
         self.chart_ratio.label = "Pair Ratio"
         
+    def set_tickers(self, a, b):
+        self.pair_name = f"{a}__{b}"
+        self.ticker_a = a
+        self.ticker_b = b
+        self.pair_info = self.get_pair_info()
+        self.updated_pair_info = {}
+
     def set_callback_app(self, app):
         self.callback_app = app
 
@@ -64,7 +71,7 @@ class PairView:
             Output("pair-price-content", "children"), 
             [
                 Input("toggle-reverse", "value"),
-                Input(f"{self.pair_name}-input-ratio", "value")
+                Input("input-ratio", "value")
             ]
         )
         def update_reverse_and_ratio(reverse, ratio):
@@ -185,7 +192,7 @@ class PairView:
                 html.Br(),
                 dbc.Checklist(id="toggle-watchlist", options=[{"label": "Watchlist", "value": 1}],value=[self.get_pair_info().get('watchlist', 0)],switch=True,),
                 dbc.Checklist(id="toggle-reverse", options=[{"label": "Reverse Order", "value": 1}],value=[self.get_pair_info().get('reverse', [])],switch=True,),
-                dbc.InputGroup([dbc.InputGroupText("Hedge Ratio"), dbc.Input(id=f"{self.pair_name}-input-ratio",placeholder="Ratio", type="number", step=0.01, value=self.pair_info.get("hedge_ratio"))], className="mb-3"),
+                dbc.InputGroup([dbc.InputGroupText("Hedge Ratio"), dbc.Input("input-ratio",placeholder="Ratio", type="number", step=0.01, value=self.pair_info.get("hedge_ratio"))], className="mb-3"),
                 dbc.InputGroup([dbc.InputGroupText("Notes"), dbc.Textarea(id="input-notes", value=self.get_pair_info().get('notes', []))], className="mb-3"),
                 dbc.Button("Save", id="save-info-button", color="primary", n_clicks=0),
                 dcc.Input(id='force-update', type='hidden', value=0)
@@ -259,7 +266,8 @@ if __name__ == '__main__':
 
     df = scanner.market_data(["LNT", "WEC"])
 
-    pair_view = PairView("LNT", "WEC")
+    pair_view = PairView()
+    pair_view.set_tickers("LNT", "WEC")
     pair_view.market_data = df
     pair_view.set_callback_app(app)
     

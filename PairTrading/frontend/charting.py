@@ -83,24 +83,24 @@ class DashChart:
             return fig
     
     def chart_candlestick_callback(self, value):
-        bbands = self.calculate_bollinger_bands(17, 3)
+        bbands = self.calculate_bollinger_bands(18, 2)
         
         figures = [
-                    go.Candlestick(
-                    x=self._data[self.dataKeys['Time']],
-                    open=self._data[self.dataKeys['Open']],
-                    high=self._data[self.dataKeys['High']],
-                    low=self._data[self.dataKeys['Low']],
-                    close=self._data[self.dataKeys['Close']],
-                    showlegend=False)
-                ] 
+            go.Candlestick(
+            x=self._data[self.dataKeys['Time']],
+            open=self._data[self.dataKeys['Open']],
+            high=self._data[self.dataKeys['High']],
+            low=self._data[self.dataKeys['Low']],
+            close=self._data[self.dataKeys['Close']],
+            showlegend=False)
+        ] 
 
         if "bbands" in value:
-                figures += [
-                            go.Scatter(x=self._data[self.dataKeys['Time']], y=bbands['upper_band'], line={"width" : 1},showlegend=False),
-                            go.Scatter(x=self._data[self.dataKeys['Time']], y=bbands['mid'], line={"width" : 1},showlegend=False),
-                            go.Scatter(x=self._data[self.dataKeys['Time']], y=bbands['lower_band'], line={"width" : 1},showlegend=False) 
-                    ]  
+            figures += [
+                go.Scatter(x=self._data[self.dataKeys['Time']], y=bbands['upper_band'], line={"width" : 1},showlegend=False),
+                go.Scatter(x=self._data[self.dataKeys['Time']], y=bbands['mid'], line={"width" : 1},showlegend=False),
+                go.Scatter(x=self._data[self.dataKeys['Time']], y=bbands['lower_band'], line={"width" : 1},showlegend=False) 
+            ]  
         
         fig = go.Figure(figures)
 
@@ -259,58 +259,5 @@ class DashChart:
         return layoutElements
 
 if __name__ == '__main__':
-
-    from PairTrading.backend.data_wrangler import DataWrangler
-    dw = DataWrangler()
-    df = dw._DataWrangler__polygon_db.get_table('market_data')
-
-    tickers = ["AA", "MSTR", "AU", "CMA", "DVN", "GCT", "AZEK", "BTI", "CFLT"]
-
-    app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-
-    charts = []
-    for t in tickers:
-        chart = DashChart(t, "line")
-        chart.label = t
-        print(df[df.ticker == t])
-        chart.data = df[df.ticker == t]
-        
-        chart.set_callback_app(app)
-        charts.append(chart)
-
-    layout_objects = []
-
-    row1 = html.Tr([
-        html.Td(charts[0].get_layout()), 
-        html.Td(charts[1].get_layout()),
-        html.Td("")
-    ])
-    row2 = html.Tr([
-        html.Td(charts[2].get_layout()), 
-        html.Td(charts[3].get_layout()),
-        html.Td("")
-    ])
-    row3 = html.Tr([
-        html.Td(charts[4].get_layout()), 
-        html.Td(charts[5].get_layout()),
-        html.Td("")
-    ])
-    row4 = html.Tr([
-        html.Td(charts[6].get_layout()), 
-        html.Td(charts[7].get_layout()),
-        html.Td("")
-    ])
-    row5 = html.Tr([
-        html.Td(charts[8].get_layout())
-    ])
-    
-    table_body = [html.Tbody([row1, row2, row3, row4, row5])]
-    table = dbc.Table(table_body, borderless=True, striped=False)
-
-    app.layout = html.Div(
-        #layout_objects,
-        table,
-    )
-
-    app.run_server(debug=True)
+    pass
 
