@@ -21,10 +21,10 @@ s = Scanner()
 
 def polygon(update_snapshot=False, update_ticker_info=False):
 	#Polygon
-	polygon_tables = s._DataWrangler__polygon_db.list_tables()
+	polygon_tables = s._PolygonWrangler__polygon_db.list_tables()
 
 	for table_name in polygon_tables.name.to_list():
-		df = s._DataWrangler__polygon_db.get_table(table_name)
+		df = s._PolygonWrangler__polygon_db.get_table(table_name)
 		print(
 			f'-> {table_name} head\n',
 			df.columns.to_list(), '\n',
@@ -33,11 +33,11 @@ def polygon(update_snapshot=False, update_ticker_info=False):
 		)
 
 def yahoo():
-	yf_tables = s._DataWrangler__yfinance_db.list_tables()
+	yf_tables = s._YahooWrangler__yfinance_db.list_tables()
 	print('Yahoo Tables:\n', yf_tables, '\n')
 
 	#Market Data
-	md = s.all_market_data
+	md = s._YahooWrangler__yfinance_db.get_table('market_data')
 	print(
 		'-> Market Data Sample\n',
 		f'{len(md.ticker.unique())} tickers\n',
@@ -48,15 +48,15 @@ def yahoo():
 
 def user():
 	#User
-	user_tables = s._DataWrangler__user_db.list_tables()
+	user_tables = s._UserWrangler__user_db.list_tables()
 	print('User Tables:\n', user_tables, '\n')
 
 	for table_name in user_tables.name.to_list():
-		df = s._DataWrangler__user_db.get_table(table_name)
+		df = s._UserWrangler__user_db.get_table(table_name)
 		print(
 			f'-> {table_name} head\n',
 			df.columns.to_list(), '\n',
-	        s._DataWrangler__user_db.get_table(table_name).head(),
+	        s._UserWrangler__user_db.get_table(table_name).head(),
 			'\n'
 		)
 

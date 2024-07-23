@@ -7,6 +7,8 @@ USER_DB = (PROJECT_ROOT / 'data' / 'local' / 'user.db').resolve()
 #User
 TICKER_RANK_TABLE_NAME = 'ticker_rank'
 PAIR_INFO_TABLE_NAME = 'pair_info'
+WATCHLIST_TABLE_NAME = 'watchlist'
+TRADES_TABLE_NAME = 'trades'
 
 #Yahoo
 MARKET_DATA_TABLE_NAME = 'market_data'
