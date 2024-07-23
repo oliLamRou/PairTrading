@@ -30,7 +30,6 @@ class DataUtils():
         today = pd.to_datetime(date.today())
         df = DataWrangler().market_data([ticker])
         df = df[(df.date != today)]
-        print(df)
         return df[df.date == df.date.max()].close.iloc[0]
     
     @staticmethod

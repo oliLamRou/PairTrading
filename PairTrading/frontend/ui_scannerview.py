@@ -2,6 +2,7 @@ from PairTrading.frontend.charting import DashChart
 from PairTrading.backend.scanner import Scanner
 from PairTrading.frontend.data_utils import DataUtils
 from PairTrading.frontend.ui_pairview import PairView
+from PairTrading.backend.data_wrangler import DataWrangler
 
 from dash import Dash, html, dcc, Input, Output, State, ctx, ALL
 import dash_bootstrap_components as dbc
@@ -15,13 +16,7 @@ class ScannerView:
         self.scanner = scanner
         self.pairs_list = []
 
-        #Preload pair view page
-        #self.pair_view = PairView("LNT", "WEC")
-        #self.pair_view.market_data = self.scanner.market_data(["LNT", "WEC"])
-        
         self.pair_view = PairView()
-       #self.pair_view.market_data = self.scanner.market_data(["LNT", "WEC"])
-        self.pair_view.set_callback_app(app)
         
         #Preload chart objects
         self.compare_charts = []
@@ -41,10 +36,7 @@ class ScannerView:
 
     def set_callback_app(self, app):
         self.callback_app = app
-        # self.pair_view = PairView("LNT", "WEC")
-        # self.pair_view.market_data = self.scanner.market_data(["LNT", "WEC"])
-        # self.pair_view.set_callback_app(app)
-        # self.pairview_layout = self.pair_view.get_layout()
+        self.pair_view.set_callback_app(app)
         for c in self.compare_charts:
             c.set_callback_app(app)
 
@@ -147,9 +139,20 @@ class ScannerView:
             chart.compareData = tickerb_df
             chart_counter += 1
 
+            dw = DataWrangler()
+            info_a = dw.ticker_details(ticker_a)
+            
+            if info_a is None:
+                print("No Info")
+                description_a = ""
+            else:
+                print(info_a.get("description"))
+                description_a = info_a.get("description")
+
+            #description_a = info_a.get("description")
             chart_card = chart.get_layout()
             detail_card = dbc.Card([
-                dbc.CardBody("Details"),
+                dbc.CardBody(f"{ticker_a}: {description_a}"),
             ])
 
             pair_card = dbc.Card([
