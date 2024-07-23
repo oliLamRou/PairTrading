@@ -10,7 +10,8 @@ from dash import Dash, html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc  
 
 class PairView:
-    def __init__(self, ticker_a, ticker_b, diff_average=1, ratio=1, show_header=True):
+    def __init__(self, ticker_a, ticker_b, show_header=True):
+        self.pair_name = f"{ticker_a}__{ticker_b}"
         self.ticker_a = ticker_a
         self.ticker_b = ticker_b
         self.show_header = show_header
@@ -63,7 +64,7 @@ class PairView:
             Output("pair-price-content", "children"), 
             [
                 Input("toggle-reverse", "value"),
-                Input("input-ratio", "value")
+                Input(f"{self.pair_name}-input-ratio", "value")
             ]
         )
         def update_reverse_and_ratio(reverse, ratio):
@@ -78,7 +79,7 @@ class PairView:
             if ratio:
                 self.updated_pair_info["hedge_ratio"] = ratio
 
-            return f"Pair price: {self.get_pair_price()}"
+            return f"Pair price: ${self.get_pair_price():,.2f}"
         
         @app.callback( Output('dummy-output', 'data', allow_duplicate=True), Input("input-notes", "value"), prevent_initial_call=True)
         def update_notes(value):
@@ -87,7 +88,8 @@ class PairView:
 
         @app.callback(
             Output('force-update', 'value'),
-            [Input('save-info-button', 'n_clicks')]
+            [Input('save-info-button', 'n_clicks')],
+            prevent_initial_call=True
         )
         def force_update(n_clicks):
             print("Update pair info: ", self.updated_pair_info)
@@ -98,7 +100,8 @@ class PairView:
         self.update_pair_info(self.pair_info)
 
     def get_pair_price(self):
-        ratio = self.updated_pair_info.get("hedge_ratio", self.updated_pair_info.get("hedge_ratio"))
+        ratio = self.updated_pair_info.get("hedge_ratio")
+
         if self.updated_pair_info["reverse"]:
             pair_price = du.get_last_price(self.ticker_b) - (du.get_last_price(self.ticker_a) * ratio)
         else:
@@ -145,12 +148,14 @@ class PairView:
         
     def get_pair_info(self):
         dw = DataWrangler()
-        pair_info = dw.get_pair_info([self.ticker_a, self.ticker_b]).fillna(0)
+        pair_info = dw.get_pair_info([self.ticker_a, self.ticker_b]).fillna(0).to_dict()
 
         #Default values
-        pair_info["hedge_ratio"] = 1 if pair_info["hedge_ratio"] is None else pair_info["hedge_ratio"]
-        pair_info["reverse"] = 0 if pair_info["reverse"] is None else pair_info["reverse"]
-        pair_info["watchlist"] = 0 if pair_info["reverse"] is None else pair_info["watchlist"]
+        pair_info["hedge_ratio"] = 1 if pair_info.get("hedge_ratio") is None else pair_info.get("hedge_ratio")
+        pair_info["reverse"] = 0 if pair_info.get("reverse") is None else pair_info["reverse"]
+        pair_info["watchlist"] = 0 if pair_info.get("watchlist") is None else pair_info["watchlist"]
+        
+        print("Pair info :",  pair_info)
 
         return pair_info
     
@@ -165,20 +170,22 @@ class PairView:
         self.chart_compare.data = df_a
         self.chart_compare.compareData = df_b
 
+        DVA_a = du.get_average_volume(self.ticker_a) * du.get_last_price(self.ticker_a)
+        DVA_b = du.get_average_volume(self.ticker_b) * du.get_last_price(self.ticker_b)
+        print("ratiowtf: ", self.pair_info.get("hedge_ratio"))
         detail_tab = [
             #html.Div(id="pair-price-content"),
             html.P([
                 html.Div(html.H4(id="pair-price-content")),
-                "Average Difference: xxxx",html.Br(),
-                f"{self.ticker_a} Dollar Volume Average: ",html.Br(),
-                f"{self.ticker_b} Dollar Volume Average: ",html.Br(),
+                f"{self.ticker_a} Dollar Volume Average: ${DVA_a:,.0f}",html.Br(),
+                f"{self.ticker_b} Dollar Volume Average: ${DVA_b:,.0f}",html.Br(),
             ], style={"margin" : "2%"}),
             html.Div([
                 dcc.Store(id='dummy-output'),
                 html.Br(),
                 dbc.Checklist(id="toggle-watchlist", options=[{"label": "Watchlist", "value": 1}],value=[self.get_pair_info().get('watchlist', 0)],switch=True,),
                 dbc.Checklist(id="toggle-reverse", options=[{"label": "Reverse Order", "value": 1}],value=[self.get_pair_info().get('reverse', [])],switch=True,),
-                dbc.InputGroup([dbc.InputGroupText("Hedge Ratio"), dbc.Input(id="input-ratio",placeholder="Ratio", type="number", step=0.01, value=self.pair_info.get("hedge_ratio"))], className="mb-3"),
+                dbc.InputGroup([dbc.InputGroupText("Hedge Ratio"), dbc.Input(id=f"{self.pair_name}-input-ratio",placeholder="Ratio", type="number", step=0.01, value=self.pair_info.get("hedge_ratio"))], className="mb-3"),
                 dbc.InputGroup([dbc.InputGroupText("Notes"), dbc.Textarea(id="input-notes", value=self.get_pair_info().get('notes', []))], className="mb-3"),
                 dbc.Button("Save", id="save-info-button", color="primary", n_clicks=0),
                 dcc.Input(id='force-update', type='hidden', value=0)

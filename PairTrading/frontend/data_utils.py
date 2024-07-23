@@ -29,7 +29,8 @@ class DataUtils():
         #NOTE: Should we cut today directly in datawrangler?
         today = pd.to_datetime(date.today())
         df = DataWrangler().market_data([ticker])
-        return df[df.date != today].max().close
+        df = df[(df.date != today)]
+        return df[df.date == df.date.max()].close.iloc[0]
     
     @staticmethod
     def normalize_max(data: pd.Series()) -> pd.Series():
