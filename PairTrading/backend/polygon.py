@@ -8,6 +8,7 @@ import warnings
 from PairTrading.src import _constant
 from PairTrading.src.utils import PROJECT_ROOT
 
+#NOTE: _ on everything here
 class Polygon:
     BASE_URL = 'https://api.polygon.io/'
     def __init__(self):

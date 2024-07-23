@@ -2,6 +2,7 @@ name: pair_trading
 channels:
   - conda-forge
   - defaults
+  - anaconda
 dependencies:
   - pandas
   - pandas-ta
