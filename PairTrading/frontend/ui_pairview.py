@@ -15,7 +15,6 @@ class PairView:
         self.ticker_a = ticker_a
         self.ticker_b = ticker_b
         self.show_header = show_header
-
         self.pair_info = self.get_pair_info()
         self.updated_pair_info = {}
 
@@ -46,6 +45,7 @@ class PairView:
         self.callback_app = app
 
         #pair price chart
+
         self.chart_pairPrice.callback_inputs.append(Input('force-update', 'value'))
         self.chart_pairPrice.callback_inputs.append(Input("save-info-button", "n_clicks"))
         self.chart_pairPrice.pre_callback_functions.append(self.update_pair_price_df)
@@ -176,7 +176,6 @@ class PairView:
         #Pair Compare Chart
         self.chart_compare.data = df_a
         self.chart_compare.compareData = df_b
-
         DVA_a = du.get_average_volume(self.ticker_a) * du.get_last_price(self.ticker_a)
         DVA_b = du.get_average_volume(self.ticker_b) * du.get_last_price(self.ticker_b)
         print("ratiowtf: ", self.pair_info.get("hedge_ratio"))

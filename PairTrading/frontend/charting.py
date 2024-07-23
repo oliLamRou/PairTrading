@@ -75,7 +75,7 @@ class DashChart:
                 offset = [item["value"] for item in ctx.inputs_list if item["id"] == f'{self.name}-offset'][0]
 
                 fig = self.chart_compare_callback(normalize, scale, offset)
-
+            
             #Execute post-callbacks
             for f in self.post_callback_functions:
                 f()
@@ -83,8 +83,7 @@ class DashChart:
             return fig
     
     def chart_candlestick_callback(self, value):
-        bbands = self.calculate_bollinger_bands(18, 2)
-        
+        bbands = self.calculate_bollinger_bands(18, 2)        
         figures = [
             go.Candlestick(
             x=self._data[self.dataKeys['Time']],
@@ -152,7 +151,6 @@ class DashChart:
             pd.options.mode.copy_on_write = True
             self._data["normalized_close"] = DataUtils.normalize_minmax(self._data[self.dataKeys['Close']])
             self.compareData["normalized_close"] = DataUtils.normalize_minmax(self.compareData[self.dataKeys['Close']])
-
             yaxis = "normalized_close"
 
         else:
@@ -189,7 +187,6 @@ class DashChart:
         return df
     
     def get_layout(self):
-
         cardContent = []
         if self.showHeader:
             cardContent = [dbc.CardHeader(html.H6(self.label, className="card-title"))]
