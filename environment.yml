@@ -5,6 +5,7 @@ channels:
 dependencies:
   - pandas
   - pandas-ta
+  - pandas-datareader
   - seaborn
   - numpy=1.26.4
   - sqlite
