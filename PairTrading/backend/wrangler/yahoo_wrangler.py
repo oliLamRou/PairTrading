@@ -49,6 +49,8 @@ class YahooWrangler:
             update: bool = False
         ) -> pd.DataFrame():
 
+        #NOTE: split, time, failed ticker manager...
+
         def get_rows_with_date_format(tickers):
             df = self.__yfinance_db.get_rows(_db_constant.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
             df.date = pd.to_datetime(df.date)

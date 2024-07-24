@@ -91,6 +91,7 @@ class Scanner(DataWrangler):
 
         pair_df = pd.DataFrame()
         for A, B in list(itertools.combinations(tickers, 2)):
+            #NOTE: callback for %%
             columns = ['A', 'B', 'A_avg_vol', 'B_avg_vol', 'avg_diff', 'rank']
             values = [
                 A, B,
@@ -124,6 +125,5 @@ if __name__ == '__main__':
     s.min_vol = 100
     s.industry = 'SERVICES-AUTOMOTIVE REPAIR, SERVICES & PARKING'
     x = s.get_pairs
-    print(x[x.B == 'MNRO'])
-    '[A, B, C]'
+    print(x)
 
