@@ -45,7 +45,7 @@ class ScannerView:
             ],
         )
         def apply_filter_callback(minprice, maxprice, min_avg_vol, industry, max_avg_diff):
-            if industry == "1":
+            if industry == "1" or industry == "---":
                 return ""
               
             if minprice and maxprice and industry and min_avg_vol:
