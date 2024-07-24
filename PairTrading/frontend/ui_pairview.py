@@ -95,6 +95,7 @@ class PairView:
 
         @app.callback(
             Output('force-update', 'value'),
+            #Output('page-content', 'children'),
             [Input('save-info-button', 'n_clicks')],
             prevent_initial_call=True
         )
@@ -102,6 +103,7 @@ class PairView:
             print("Update pair info: ", self.updated_pair_info)
             self.update_pair_info(self.updated_pair_info)
             return n_clicks
+        
 
     def save_pair_info(self):
         self.update_pair_info(self.pair_info)
@@ -161,8 +163,6 @@ class PairView:
         pair_info["hedge_ratio"] = 1 if pair_info.get("hedge_ratio") is None else pair_info.get("hedge_ratio")
         pair_info["reverse"] = 0 if pair_info.get("reverse") is None else pair_info["reverse"]
         pair_info["watchlist"] = 0 if pair_info.get("watchlist") is None else pair_info["watchlist"]
-        
-        print("Pair info :",  pair_info)
 
         return pair_info
     
@@ -178,7 +178,7 @@ class PairView:
         self.chart_compare.compareData = df_b
         DVA_a = du.get_average_volume(self.ticker_a) * du.get_last_price(self.ticker_a)
         DVA_b = du.get_average_volume(self.ticker_b) * du.get_last_price(self.ticker_b)
-        print("ratiowtf: ", self.pair_info.get("hedge_ratio"))
+
         detail_tab = [
             #html.Div(id="pair-price-content"),
             html.P([
