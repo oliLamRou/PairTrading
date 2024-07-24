@@ -66,8 +66,8 @@ class Scanner(DataWrangler):
         ]['ticker'].to_list()
         return set(df)
 
-    @property
-    def get_pairs(self) -> pd.DataFrame():
+    #@property
+    def get_pairs(self, callback_func=None) -> pd.DataFrame():
         if not self.sic:
             return pd.DataFrame()
         
@@ -90,7 +90,13 @@ class Scanner(DataWrangler):
         volume_data = volume_data[-self.avg_vol_length:]
 
         pair_df = pd.DataFrame()
+
+        pairs = list(itertools.combinations(tickers, 2))
+        i = 0
+
         for A, B in list(itertools.combinations(tickers, 2)):
+            callback_func( i / (len(pairs)-1) )
+            i += 1
             columns = ['A', 'B', 'A_avg_vol', 'B_avg_vol', 'avg_diff', 'rank']
             values = [
                 A, B,

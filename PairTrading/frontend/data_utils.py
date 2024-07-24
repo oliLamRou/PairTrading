@@ -36,6 +36,18 @@ class DataUtils():
     @staticmethod
     def normalize_minmax(data: pd.Series()) -> pd.Series():
         return (data - data.min()) / (data.max() - data.min())
+    
+    @staticmethod
+    def format_large_number(num):
+        suffixes = ['', 'K', 'M', 'B', 'T']
+        magnitude = 0
+
+        while abs(num) >= 1000 and magnitude < len(suffixes) - 1:
+            magnitude += 1
+            num /= 1000.0
+
+        formatted_num = f"{num:.1f}{suffixes[magnitude]}"
+        return formatted_num
         
 if __name__ == '__main__':
     print(DataUtils.get_last_price('wec'))

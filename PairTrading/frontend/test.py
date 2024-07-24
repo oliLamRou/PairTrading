@@ -1,80 +1,37 @@
 from PairTrading.frontend.charting import DashChart
+from PairTrading.backend.scanner import Scanner
+from PairTrading.frontend.data_utils import DataUtils as du
+from PairTrading.frontend.ui_pairview import PairView
 from PairTrading.backend.data_wrangler import DataWrangler
-from PairTrading.frontend.data_utils import DataUtils
-from PairTrading.frontend.pair import Pair
 
-from PairTrading.src import _constant
-import pandas as pd
-
-from dash import Dash, html, dcc, Input, Output
+from dash import Dash, html, dcc, Input, Output, State, ctx, ALL
 import dash_bootstrap_components as dbc
+import json
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 dw = DataWrangler()
-df = dw.market_data("AA")
+scanner = Scanner()
+scanner.min_price = 20
+scanner.max_price = 170
+scanner.min_avg_vol = 20000
 
-chart1 = DashChart("AA", "candlestick")
-chart1.data = df
-chart1.set_callback_app(app)
+ppairs = scanner.potential_pair
+print(ppairs)
+#print(ppair[ppair.potential_pair > 1].reset_index()) #GOLD AND SILVER ORES
 
-df = dw.market_data("AU")
-chart2 = DashChart("AU", "line")
-chart2.data = df
-chart2.set_callback_app(app)
+#count = ppairs.set_index("industry")#.to_dict() #.get("GOLD AND SILVER ORES")
+#count = ppairs[ppairs["industry"] == "FORESTRY"].potential_pair.iloc[0]
+industry = "STATE COMMERCIAL BANKS"
+industry_df = ppairs[ppairs["industry"] == industry]
 
-
-def out_page1():
-    ChartCard = [
-        dbc.CardBody([
-            dbc.Row([
-                #dbc.Col("papate"),
-                dbc.Col(chart1.get_layout()),
-                
-            ])
-        ])                
-    ]
-
-    chartCard = dbc.Card(
-        ChartCard
-    )  
-    
-    return chartCard
+if industry_df.empty:
+    print("Empty")
+else:
+    print(industry_df.get("potential_pair").iloc[0])
 
 
-def out_page2():
-    ChartCard = [
-        dbc.CardBody([
-            dbc.Row([
-                dbc.Col(chart2.get_layout()),
-            ])
-        ])                
-    ]
+#count = ppairs
+#print(type(count))
+#print(count)
 
-    chartCard = dbc.Card(
-        ChartCard
-    )  
-    
-    return [chartCard, out_page1()]
-
-app.layout = html.Div([
-    #dcc.Input(id='pagination', value=1, type="number", step=1),
-    dbc.Pagination(id="pagination", max_value=100, first_last=False, fully_expanded=False, previous_next=False),
-    html.Div(id="page-content"),
-])
-
-@app.callback(
-    Output("page-content", "children"),
-    [Input("pagination", "active_page")]
-)
-def change_page(value):
-    if value:
-        print(value)
-        if value == 1:
-            return out_page1()
-        if value == 2:
-            return out_page2()
-    
-    return "Select a page"
-
-app.run_server(debug=True, port=8060)
+#print(scanner.potential_pair_amount)
