@@ -45,13 +45,9 @@ class ScannerView:
             ],
         )
         def apply_filter_callback(minprice, maxprice, min_avg_vol, industry, max_avg_diff):
-            print("Esti")
-            print(industry)
-
             if industry == "1":
                 return ""
             
-            #self.update_industry_dropdown()
             if minprice and maxprice and industry and min_avg_vol:
                 self.max_avg_diff = max_avg_diff
 
@@ -94,7 +90,7 @@ class ScannerView:
             return is_open, "nothing", "nothing"
 
     def update_industry_dropdown(self):
-        print("Update Industry Dropdown")
+        #print("Update Industry Dropdown")
         ppairs = self.scanner.potential_pair.sort_values("potential_pair", ascending=False)
         industry_list = ppairs["industry"].to_list()
 
@@ -112,7 +108,8 @@ class ScannerView:
                 self.industry_dropdown.append({"label": f"({count}) {industry}", "value": i+2})
     
     def get_pairs_callback(self, percent):
-        print(percent)
+        return
+        #print(percent)
 
     def filter_pairs(self, industry):
         self.pairs_list = []
