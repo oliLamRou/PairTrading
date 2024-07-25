@@ -95,7 +95,6 @@ class Scanner(DataWrangler):
         i = 0
 
         for A, B in list(itertools.combinations(tickers, 2)):
-            callback_func( i / (len(pairs)-1) )
             i += 1
             columns = ['A', 'B', 'A_avg_vol', 'B_avg_vol', 'avg_diff', 'rank']
             values = [
@@ -128,8 +127,7 @@ if __name__ == '__main__':
     s.min_price = 5
     s.max_price = 200
     s.min_vol = 100
-    s.industry = 'SERVICES-AUTOMOTIVE REPAIR, SERVICES & PARKING'
-    x = s.get_pairs
-    print(x[x.B == 'MNRO'])
-    '[A, B, C]'
-
+    # df = s.potential_pair
+    # print(df[df.potential_pair < 20000])
+    s.industry = 'BLANK CHECKS'
+    s.get_pairs()
