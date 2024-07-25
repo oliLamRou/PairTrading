@@ -31,7 +31,9 @@ PAIR_INFO_COLUMNS = {
     'reverse': ['reverse', 'INTERGER'],  
     'watchlist': ['watchlist', 'INTERGER'],
     'hedge_ratio': ['hedge_ratio', 'REAL'],
-    'notes': ['notes', 'TEXT']
+    'notes': ['notes', 'TEXT'],
+    'trades' : ['trades', 'TEXT'],
+    'position' : ['position', 'INTEGER']
 }
 
 TICKER_RANK_COLUMNS = {
