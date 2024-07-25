@@ -1,14 +1,14 @@
 import time
-import pandas as pd
-from pandas import Timestamp
-import numpy as np
-from PairTrading.backend.data_wrangler import DataWrangler
-import math
-import matplotlib.pyplot as plt
 import itertools
-import yfinance as yf
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from statsmodels.tsa.stattools import coint
+
+from PairTrading.backend.data_wrangler import DataWrangler
 
 class Scanner(DataWrangler):
+    PAIRS_COLUMNS = ['A', 'B', 'A_avg_vol', 'B_avg_vol', 'avg_diff', 'coint', 'rank']
     def __init__(self):
         super().__init__()
         self._pair_df = pd.DataFrame()
@@ -90,21 +90,20 @@ class Scanner(DataWrangler):
         volume_data = volume_data[-self.avg_vol_length:]
 
         pair_df = pd.DataFrame()
-
         pairs = list(itertools.combinations(tickers, 2))
-        i = 0
-
-        for A, B in list(itertools.combinations(tickers, 2)):
-            callback_func( i / (len(pairs)-1) )
-            i += 1
-            columns = ['A', 'B', 'A_avg_vol', 'B_avg_vol', 'avg_diff', 'rank']
+        for A, B in pairs:
             values = [
                 A, B,
                 volume_data[A].mean().astype(int), volume_data[B].mean().astype(int),
                 (close_data[A] - close_data[B]).abs().mean().round(3),
+                round(coint(close_data[A].fillna(0), close_data[B].fillna(0))[1], 3),
                 1
             ]
-            pair_df.loc[pair_df.size, columns] = values
+            pair_df.loc[pair_df.size, self.PAIRS_COLUMNS] = values
+
+            #Progress bar
+            if callback_func:
+                callback_func(pair_df.A.size / (len(pairs)))
 
         return pair_df.reset_index(drop=True)
 
@@ -128,8 +127,7 @@ if __name__ == '__main__':
     s.min_price = 5
     s.max_price = 200
     s.min_vol = 100
-    s.industry = 'SERVICES-AUTOMOTIVE REPAIR, SERVICES & PARKING'
-    x = s.get_pairs
-    print(x[x.B == 'MNRO'])
-    '[A, B, C]'
+    s.industry = 'CRUDE PETROLEUM & NATURAL GAS'
+    x = s.get_pairs()
+    print(x)
 
