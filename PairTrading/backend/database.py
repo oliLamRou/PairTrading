@@ -42,6 +42,13 @@ class DataBase:
         return self._read_sql_query(f"PRAGMA table_info({table_name})")['name']
 
     #WRITE
+    def _executemany(self, query, values):
+        conn = sqlite3.connect(self.path)
+        cursor = conn.cursor()
+        cursor.executemany(query, values)
+        conn.commit()
+        conn.close()
+
     def _execute(self, query, values=None):
         conn = sqlite3.connect(self.path)
         cursor = conn.cursor()
@@ -71,9 +78,7 @@ class DataBase:
         self._execute(f'DELETE FROM {table_name}')
 
     def create_table(self, table_name: str):
-        self._execute(f'''
-            CREATE TABLE IF NOT EXISTS {table_name} (id INTEGER PRIMARY KEY)'''
-        )
+        self._execute(f'CREATE TABLE IF NOT EXISTS {table_name} (id INTEGER PRIMARY KEY AUTOINCREMENT)')
 
     def add_columns(self, table_name: str, columns: dict):
         conn = sqlite3.connect(self.path)
@@ -95,6 +100,13 @@ class DataBase:
         placeholders = ', '.join('?' for _ in values)
         self._execute(f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})", values=values)
 
+    def add_rows(self, table_name: str, rows: list, columns: list):
+        #rows format: [(value1, value2), (value1, value2), ...]
+        placeholder = ", ".join(["?"] * len(columns))
+        columns = ", ".join(columns)
+        query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholder})"
+        self._executemany(query, rows)
+
     def update_row(self, table_name: str, row: dict, column_name: str, column_value):
         columns = '=?, '.join(row.keys()) + '=?'
         values = list(row.values())
@@ -111,11 +123,6 @@ class DataBase:
 
 if __name__ == '__main__':
     from PairTrading.src import _constant
-    db = DataBase('../../data/polygon.db')
-    pair_info = {
-        'A': 'AAPL',
-        'B': 'MSTR'
-    }
-    # db.add_row('watchlist', pair_info)
-    print(db.get_table('ticker_details'))
-
+    db = DataBase('../../data/local/yfinance.db')
+    # print(db.list_tables())
+    print(db.get_table('failed_ticker'))
