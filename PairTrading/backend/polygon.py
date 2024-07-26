@@ -90,7 +90,7 @@ class Polygon:
     def ticker_details(self, ticker: str) -> dict:
         url = f'v3/reference/tickers/{ticker}?apiKey={self.key}'
         return self.requests_and_format(url, _constant.TICKER_DETAILS_COLUMNS)
-
+    
 if __name__ == '__main__':
     p = Polygon()
-    print(p.grouped_daily())
+    print(p.historical_fee_rates("MSFT"))
