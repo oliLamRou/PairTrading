@@ -32,7 +32,7 @@ PAIR_INFO_COLUMNS = {
     'watchlist': ['watchlist', 'INTERGER'],
     'hedge_ratio': ['hedge_ratio', 'REAL'],
     'notes': ['notes', 'TEXT'],
-    'trades' : ['trades', 'TEXT'],
+    'trade_history' : ['trade_history', 'TEXT'],
     'position' : ['position', 'INTEGER']
 }
 

@@ -1,15 +1,22 @@
-from PairTrading.frontend.data_utils import DataUtils
+from PairTrading.frontend.data_utils import DataUtils as du
+from PairTrading.backend.data_wrangler import DataWrangler
+import ast
 
 class Pair():
-    def __init__(self, pair=["AA", "AU"]) -> None:
+    def __init__(self, pair: list = ["", ""], hedge_ratio=1):
         self._pair = pair
-        self._price = 0
-        self.ratio = 1
         
-    @property
-    def price(self):
-        return self._price
-    
+        if self._pair:
+            self.pair_info = self.fetch_saved_info()
+        else:
+            self.pair_info = {}
+            self.hedge_ratio = hedge_ratio
+            self.reverse = 0
+            self.watchlist = 0
+            self.notes = ""
+            self.trade_history = []
+            self.position = 0
+
     @property
     def a(self):
         return self._pair[0]
@@ -26,30 +33,40 @@ class Pair():
     def b(self, value):
         self._pair[1] = value
     
-    def update_price(self):
-        d = DataUtils()
-        self._price = d.get_last_price(self.a) - d.get_last_price(self.b) * self.ratio
+    def set_pair(self, pair):
+        self._pair = pair
+        self.pair_info = self.fetch_saved_info()
+
+    def fetch_saved_info(self):
+        dw = DataWrangler()
+        pair_info = dw.get_pair_info([self.a, self.b]).fillna(0).to_dict()
+
+        #Default values
+        self.hedge_ratio = 1 if pair_info.get("hedge_ratio") is None else pair_info.get("hedge_ratio")
+        self.reverse = 0 if pair_info.get("reverse") is None else pair_info["reverse"]
+        self.watchlist = 0 if pair_info.get("watchlist") is None else pair_info["watchlist"]
+        self.notes = "" if pair_info.get("notes") is None else pair_info["notes"]
+        self.trade_history = [] #ast.literal_eval(pair_info.get("trade_history", "[]"))
+        self.position = 0 if pair_info.get("position") is None else pair_info["position"]
+        return pair_info
+
+    def save_pair_info(self):
+        dw = DataWrangler()
+        info = {"hedge_ratio": self.hedge_ratio, "reverse" : self.reverse, "watchlist" : self.watchlist, 
+                "notes" : self.notes, "trade_history" : str(self.trade_history), "position" : self.position}
+        
+        return dw.update_pair_info([self.a, self.b], info)
+        
+    def get_price(self):
+        if self.reverse:
+            pair_price = du.get_last_price(self.b) - (du.get_last_price(self.a) * self.hedge_ratio)
+        else:
+            pair_price = du.get_last_price(self.a) - (du.get_last_price(self.b) * self.hedge_ratio)
+        return pair_price
+
+
     
-    def calculate_order(self):
-        d = DataUtils()
-        priceA = d.get_last_price(self.a)
-        priceB = d.get_last_price(self.b)
-        volA = d.get_average_volume(self.a, 30)
-        volB = d.get_average_volume(self.b, 30)
 
-        priceVolA = priceA * volA
-        priceVolB = priceB * volB
-
-        if priceVolA > priceVolB:
-            self.invert()
-
-    def calculate_current_ratio(self):
-        d = DataUtils()
-        return d.get_last_price(self.a) / d.get_last_price(self.b)
-
-    def invert(self):
-        #self.pair[0], self.pair[1] = self.pair[1], self.pair[0]
-        self.a, self.b = self.b, self.a
     
 
     
