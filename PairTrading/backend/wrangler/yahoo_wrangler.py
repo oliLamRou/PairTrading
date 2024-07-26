@@ -1,3 +1,4 @@
+import time
 import pandas as pd
 import yfinance as yf
 
@@ -14,33 +15,14 @@ class YahooWrangler:
             row = row.to_dict()
             self.__yfinance_db.add_row(_db_constant.MARKET_DATA_TABLE_NAME, row)
 
-    def format_ticker(self, df, ticker, timespan):
-        ticker_df = df.reset_index().copy()
-
-        if isinstance(df.columns, pd.MultiIndex):
-            if not ticker in ticker_df.columns.get_level_values(1).unique():
-                return pd.DataFrame()
-
-            ticker_df = df.loc[:, pd.IndexSlice[:, ticker]].reset_index()
-            ticker_df.columns = ticker_df.columns.get_level_values(0)
-
-        ticker_df.rename(columns={k: v[0] for k, v in _constant.MARKET_DATA_COLUMNS.items()}, inplace=True)
-        ticker_df['ticker'] = ticker
-        ticker_df['timespan'] = timespan
-        ticker_df['date'] = ticker_df['date'].dt.strftime('%Y-%m-%d')
-        return ticker_df[ticker_df.close.notna()]
-
     def manage_wrong_tickers(self, tickers):
-        #Manage Failed tickers
+        previous_failed_tickers = self.__yfinance_db.get_rows(_db_constant.FAILED_TICKER_TABLE_NAME, 'ticker', tickers).ticker.unique()
         downloaded_tickers = self.__yfinance_db.get_rows(_db_constant.MARKET_DATA_TABLE_NAME, 'ticker', tickers).ticker.unique()
         failed_to_download = set(tickers).difference(downloaded_tickers)
+        failed_to_download = failed_to_download.difference(previous_failed_tickers)
 
-        for ticker in failed_to_download:
-            if self.__yfinance_db.has_value(_db_constant.FAILED_TICKER_TABLE_NAME, 'ticker', ticker):
-                continue
-
-            print(f'--> Adding {ticker} to {_db_constant.FAILED_TICKER_TABLE_NAME}')
-            self.__yfinance_db.add_row(_db_constant.FAILED_TICKER_TABLE_NAME, {'ticker': ticker})
+        print(f'--> Adding {failed_to_download} to {_db_constant.FAILED_TICKER_TABLE_NAME}')
+        self.__yfinance_db.add_rows(_db_constant.FAILED_TICKER_TABLE_NAME, [tuple([ticker]) for ticker in failed_to_download], ['ticker'])
 
     def market_data(self,
             tickers: list,
@@ -49,43 +31,59 @@ class YahooWrangler:
             update: bool = False
         ) -> pd.DataFrame():
 
-        #NOTE: remove rows with nan
-        def get_rows_with_date_format(tickers):
-            df = self.__yfinance_db.get_rows(_db_constant.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
-            df.date = pd.to_datetime(df.date)
-            return df
-        
-        #When update skip this part so all tickers will be updated
-        to_download = tickers
-        if not update:
+        #type check
+        if type(tickers) not in [list, set, tuple]:
+            raise ValueError('tickers must be type list')
+
+        #Start with download everything
+        good_tickers = set(tickers)
+
+        #to_download minus tickers that previously failed to download
+        previous_failed_tickers = self.__yfinance_db.get_rows(_db_constant.FAILED_TICKER_TABLE_NAME, 'ticker', tickers).ticker.unique()
+        good_tickers = good_tickers.difference(previous_failed_tickers)
+
+        if update:
+            self.__yfinance_db._delete_rows(_db_constant.MARKET_DATA_TABLE_NAME, 'ticker', good_tickers)
+        else:
             downloaded_tickers = self.__yfinance_db.get_rows(_db_constant.MARKET_DATA_TABLE_NAME, 'ticker', tickers).ticker.unique()
-            to_download = set(tickers).difference(downloaded_tickers)
-            #Remove failed tickers
-            to_download = to_download.difference(self.__yfinance_db.get_rows(_db_constant.FAILED_TICKER_TABLE_NAME, 'ticker', tickers).ticker.unique())
+            good_tickers = good_tickers.difference(downloaded_tickers)
+            print(f'--> Trying to download: {good_tickers}\n')
 
-        #When to_download is empty there is nothing to update so return tickers
-        if not to_download:
-            return get_rows_with_date_format(tickers)
-
-        #Download data, if nothing downloaded mean all bad tickers.
-        print(f'--> Trying to download: {to_download}')
-        df = yf.download(to_download, period=period)
-        if df.empty:
-            self.manage_wrong_tickers(tickers)
-            return get_rows_with_date_format(tickers)
-
-        #Delete all rows with tickers in to_download
-        self.__yfinance_db._delete_rows(_db_constant.MARKET_DATA_TABLE_NAME, 'ticker', to_download)
-        #Format and write in DB
-        for ticker in to_download:
-            ticker_df = self.format_ticker(df, ticker, timespan)
-            if ticker_df.empty:
-                continue
-            
-            self.write_market_data(ticker_df)
-
+        self.download_market_data(good_tickers, timespan, period)
         self.manage_wrong_tickers(tickers)
-        return get_rows_with_date_format(tickers)
+
+        # READ and RETURN
+        df = self.__yfinance_db.get_rows(_db_constant.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
+        df.date = pd.to_datetime(df.date)
+        return df
+
+    def download_market_data(self, good_tickers, timespan, period):
+        if not good_tickers:
+            return 
+
+        df = yf.download(good_tickers, period=period)
+        if df.empty:
+            return
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df = df.stack(level='Ticker', future_stack=True).reset_index().sort_values(['Ticker', 'Date'])
+        else:
+            df = df.reset_index()
+            df['ticker'] = good_tickers.pop()
+
+        df.rename(columns={k: v[0] for k, v in _constant.MARKET_DATA_COLUMNS.items()}, inplace=True)
+        df['timespan'] = timespan
+        df['date'] = df['date'].dt.strftime('%Y-%m-%d')
+        df = df[df.close.notna()]
+
+        #WRITE
+        columns = df.columns.to_list()
+        rows = [tuple(row.to_list()) for i, row in df.iterrows()]
+        self.__yfinance_db.add_rows(_db_constant.MARKET_DATA_TABLE_NAME, rows, columns)
+
 
 if __name__ == '__main__':
-    yw = DataWrangler()
+    yw = YahooWrangler()
+    tickers = ['COOP', 'MSTR']
+    df = yw.market_data(tickers, update=False, period='1mo')
+    print(df)
