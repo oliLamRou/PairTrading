@@ -3,6 +3,7 @@ from PairTrading.backend.scanner import Scanner
 from PairTrading.frontend.data_utils import DataUtils as du
 from PairTrading.frontend.ui_pairview import PairView
 from PairTrading.backend.data_wrangler import DataWrangler
+from PairTrading.frontend.pair import Pair
 
 from dash import Dash, html, dcc, Input, Output, State, ctx, ALL
 import dash_bootstrap_components as dbc
@@ -17,7 +18,8 @@ class ScannerView:
         self.scanner = scanner
         self.pairs_list = []
 
-        self.pair_view = PairView()
+        pair = Pair(["", ""])
+        self.pair_view = PairView(pair)
         self.update_industry_dropdown()
         
         #Preload chart objects
@@ -82,7 +84,7 @@ class ScannerView:
                 ticker_b = self.pairs_list[invoker_index][1]              
                 
                 if n[invoker_index]:
-                    self.pair_view.set_tickers(ticker_a, ticker_b)
+                    self.pair_view.set_pair_from_tickers(ticker_a, ticker_b)
                     self.pair_view.market_data = self.scanner.market_data([ticker_a, ticker_b])
                     self.pairview_layout = self.pair_view.get_layout()
                     return not is_open, html.H6(f"{ticker_a}, {ticker_b} - Pair View"), self.pair_view.get_layout()

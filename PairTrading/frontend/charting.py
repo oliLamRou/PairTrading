@@ -11,6 +11,7 @@ import dash_bootstrap_components as dbc
 class DashChart:
     def __init__(self, name="chart", chartType="line"):
         self._data = None
+        self.markers_df = pd.DataFrame()
         self.name = name
         self.label = "Label 1"
         self.showHeader = True
@@ -122,10 +123,15 @@ class DashChart:
     def chart_line_callback(self, value):
 
         figures = [
-            go.Scatter(x=self._data[self.dataKeys['Time']], y=self._data[self.dataKeys['Close']], line_shape='linear', line={"width" : 2})
+            go.Scatter(x=self._data[self.dataKeys['Time']], y=self._data[self.dataKeys['Close']], line_shape='linear', line={"width" : 2}),
+            go.Scatter(mode="markers", x=self.markers_df["time"], y=self.markers_df["price"]),
         ] 
 
         fig = go.Figure(figures)
+        fig.update_traces(
+            marker=dict(size=8, symbol="diamond", line=dict(width=2, color="DarkSlateGrey")),
+            selector=dict(mode="markers"),
+)
 
         fig.update_yaxes(showgrid=True, zeroline=False, showticklabels=True, 
                  showspikes=True, spikemode='across', spikesnap='data', showline=False, spikedash='dash', spikethickness=1, spikecolor="grey", anchor="free")
