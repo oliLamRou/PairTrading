@@ -33,10 +33,7 @@ class Polygon:
 
         return self._last_close_date
 
-    def format_results(self,
-            row: dict, 
-            columns: dict
-        ) -> dict:
+    def _format_results(self, row: dict, columns: dict) -> dict:
 
         results_ = {}
         for k, v in row.items():
@@ -56,7 +53,7 @@ class Polygon:
 
         return results_
 
-    def requests_and_format(self, url: str, columns):
+    def _requests_and_format(self, url: str, columns):
         r = requests.get(self.BASE_URL + url)
         if not r.status_code == 200:
             warnings.warn(message=f'Requests code: {r.status_code}', category=Warning, stacklevel=2)
@@ -68,28 +65,28 @@ class Polygon:
 
         print(f'Request for ({url}) successful')
         if type(results) == list:
-            return [self.format_results(result, columns) for result in results]
+            return [self._format_results(result, columns) for result in results]
         
-        return self.format_results(results, columns)
+        return self._format_results(results, columns)
     
-    def aggregates(self, ticker: str, n_days: int = 300, timespan: str = 'day') -> [dict]:
+    def _aggregates(self, ticker: str, n_days: int = 300, timespan: str = 'day') -> [dict]:
         end = self.today.strftime('%Y-%m-%d')
         start = (self.today - timedelta(days=n_days)).strftime('%Y-%m-%d')
 
         url = f'v2/aggs/ticker/{ticker}/range/1/{timespan}/{start}/{end}?adjusted=true&sort=asc&apiKey={self.key}'
-        return self.requests_and_format(url, _constant.AGGREGATES_COLUMNS)
+        return self._requests_and_format(url, _constant.AGGREGATES_COLUMNS)
 
-    def grouped_daily(self) -> [dict]:
+    def _grouped_daily(self) -> [dict]:
         url = f'v2/aggs/grouped/locale/us/market/stocks/{self.last_close_date}?adjusted=true&apiKey={self.key}'
-        return self.requests_and_format(url, _constant.GROUPED_DAILY_COLUMNS)
+        return self._requests_and_format(url, _constant.GROUPED_DAILY_COLUMNS)
 
-    def ticker_types(self, asset_class: str = 'stocks', locale: str = 'us') -> [dict]:
+    def _ticker_types(self, asset_class: str = 'stocks', locale: str = 'us') -> [dict]:
         url = f'v3/reference/tickers/types?asset_class={asset_class}&locale={locale}&apiKey={self.key}'
-        return self.requests_and_format(url, _constant.TICKER_TYPES_COLUMNS)
+        return self._requests_and_format(url, _constant.TICKER_TYPES_COLUMNS)
 
-    def ticker_details(self, ticker: str) -> dict:
+    def _ticker_details(self, ticker: str) -> dict:
         url = f'v3/reference/tickers/{ticker}?apiKey={self.key}'
-        return self.requests_and_format(url, _constant.TICKER_DETAILS_COLUMNS)
+        return self._requests_and_format(url, _constant.TICKER_DETAILS_COLUMNS)
 
 if __name__ == '__main__':
     p = Polygon()
