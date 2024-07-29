@@ -13,9 +13,7 @@ class PolygonWrangler(Polygon):
 
         #Properties
         self._all_ticker_info = pd.DataFrame()
-        self._all_market_data = pd.DataFrame()
         self._sic_code = pd.DataFrame()
-        self._ticker_types = pd.DataFrame()
         self._market_snapshot = pd.DataFrame()
         
     @property
@@ -38,7 +36,7 @@ class PolygonWrangler(Polygon):
             print(f"--> Clearing and downloading: {_db_constant.MARKET_SNAPSHOT_TABLE_NAME}\n")
             self.__polygon_db.clear_table(_db_constant.MARKET_SNAPSHOT_TABLE_NAME)
             
-            results = self.grouped_daily()
+            results = self._grouped_daily()
             for result in results:
                 self.__polygon_db.add_row(_db_constant.MARKET_SNAPSHOT_TABLE_NAME, result)
 
@@ -57,7 +55,7 @@ class PolygonWrangler(Polygon):
                 _db_constant.TICKER_INFO_TABLE_NAME, 'ticker', ticker
                 ) or update:
 
-            results = self.ticker_details(ticker)
+            results = self._ticker_details(ticker)
             if not results:
                 return
 
