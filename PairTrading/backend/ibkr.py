@@ -22,7 +22,7 @@ class IBClient(EWrapper, EClient):
         if code in [2104, 2106, 2158]:
             print(msg)
         else:
-            print(f'Error {code}: {msg}')
+            print(f'IB Error {code}: {msg}')
 
     def execDetails(self, reqId, contract, execution):
         #print("execDetails", execution)
@@ -98,15 +98,14 @@ class IBUtils():
         time.sleep(0.1)
         client.disconnect()
         
-        return client.trade_data
+        return pd.DataFrame(client.trade_data)
     
 
 if __name__ == '__main__':
 
     print("ib init")
     client = IBClient('127.0.0.1', 7497, 1)
-    api_thread = Thread(target=client.run)
-    api_thread.start()
+
     time.sleep(1)
 
     # contract = Contract()
@@ -125,7 +124,7 @@ if __name__ == '__main__':
     #     2, contract, '', '20 Y', '1 day', what_to_show, True, 2, False, []
     # )
 
-    IBUtils.get_trades("AAPL")
+    print(IBUtils.get_trades("AAPL"))
     time.sleep(0.5)
     #print(client.trade_data)
     

@@ -4,10 +4,12 @@ from PairTrading.backend.data_wrangler import DataWrangler
 from PairTrading.frontend.pair import Pair
 from PairTrading.frontend.data_utils import DataUtils as du
 from PairTrading.backend.scanner import Scanner
+from PairTrading.backend.ibkr import IBUtils as ib
 
 import pandas as pd
 from dash import Dash, html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc  
+
 
 class TradeView:
     def __init__(self, pair: Pair = ["", ""], show_header=True):
@@ -46,6 +48,12 @@ class TradeView:
         df_a = self.market_data[self.market_data.ticker == self.pair.a]
         df_b = self.market_data[self.market_data.ticker == self.pair.b]
         
+        trades = ib.get_trades("CMAX")
+        trades['time'] = pd.to_datetime(trades['time'])
+        trades['time'] = trades['time'].dt.date
+
+        self.chart_price.markers_df = trades
+
         ddf = pd.DataFrame()
 
         if self.pair.reverse == 1:
@@ -58,7 +66,7 @@ class TradeView:
         ddf["high"] = ddf["high_a"] - ddf["high_b"] * self.pair.hedge_ratio
         ddf["low"] = ddf["low_a"] - ddf["low_b"] * self.pair.hedge_ratio
 
-        self.chart_price._data = ddf
+        self.chart_price._data = df_a
         
         header_text = f"{self.pair.a} - {self.pair.b}"
         detail_card = dbc.Card([
@@ -131,9 +139,10 @@ if __name__ == '__main__':
     scanner.max_price = 200
     scanner.min_vol = 100000
     
-    df = scanner.market_data(["LNT", "WEC"])
+    df = scanner.market_data(["CMAX", "WEC"])
+    print(df)
 
-    pair = Pair(["LNT","WEC"])
+    pair = Pair(["CMAX","WEC"])
     trade_view = TradeView(pair)
     trade_view.market_data = df
     trade_view.set_callback_app(app)

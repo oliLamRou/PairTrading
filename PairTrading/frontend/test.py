@@ -10,6 +10,9 @@ import dash_bootstrap_components as dbc
 import json
 import pandas as pd
 
+scanner = Scanner()
+df = scanner.market_data("CMAX")
+print(df)
 print("test")
 print(ib.get_trades("CMAX"))
 
