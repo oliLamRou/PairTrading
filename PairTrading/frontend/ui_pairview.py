@@ -10,7 +10,7 @@ from dash import Dash, html, dcc, Input, Output, State
 import dash_bootstrap_components as dbc  
 
 class PairView:
-    def __init__(self, pair: Pair = ["", ""], show_header=True):
+    def __init__(self, pair: Pair = ["", ""], show_header=False):
         self.pair = pair
         self.show_header = show_header
 
@@ -139,11 +139,11 @@ class PairView:
         #Pair Compare Chart
         self.chart_compare.data = df_a
         self.chart_compare.compareData = df_b
-        DVA_a = du.get_average_volume(self.pair.a) * du.get_last_price(self.pair.a)
-        DVA_b = du.get_average_volume(self.pair.b) * du.get_last_price(self.pair.b)
+        
+        DVA_a = du.get_average_volume(self.pair.a, market_data=self.market_data) * du.get_last_price(self.pair.a, market_data=self.market_data)
+        DVA_b = du.get_average_volume(self.pair.b, market_data=self.market_data) * du.get_last_price(self.pair.b, market_data=self.market_data)
 
         detail_tab = [
-            #html.Div(id="pair-price-content"),
             html.P([
                 html.Div(html.H4(id="pair-price-content")),
                 f"{self.pair.a} Dollar Volume Average: ${DVA_a:,.0f}",html.Br(),
@@ -176,39 +176,24 @@ class PairView:
                 detail_tab
             )
         ])
-        #[
-            # dbc.Card([
-            #     dbc.CardHeader(html.H4(f"{self.ticker_a}-{self.ticker_b} Details", className="card-title")),
-                #dbc.Tabs([
-                    #dbc.Tab(detail_tab, label="Details"),
-                    
-                    #dbc.Tab(trades_tab, label="Trades"),
-                    #dbc.Tab("This tab's content is never seen", label="Tab 3", disabled=True),
-                #])
-            #])
-        #]
 
         #pair view card
         chart_card = [
-            #dbc.CardHeader(html.H3(f"{self.ticker_a}-{self.ticker_b} Pair", className="card-title")),
-            #dbc.CardHeader(html.H3(dbc.InputGroup([dbc.InputGroupText("Tickers: "), dbc.Input(id="pair-tickers", type="text", value="LNT, WEC")]))),
-            #dbc.CardBody([
-                dbc.Row([
-                    #charts
-                    dbc.Col([
-                        dbc.Row(dbc.Col(self.chart_pairPrice.get_layout())),
-                        dbc.Row([
-                            dbc.Col(self.chart_compare.get_layout(),width=6),
-                            dbc.Col(self.chart_ratio.get_layout(),width=6),
-                        ])
-                    ], width="8"),
+            dbc.Row([
+                #charts
+                dbc.Col([
+                    dbc.Row(dbc.Col(self.chart_pairPrice.get_layout())),
+                    dbc.Row([
+                        dbc.Col(self.chart_compare.get_layout(),width=6),
+                        dbc.Col(self.chart_ratio.get_layout(),width=6),
+                    ])
+                ], width="8"),
 
-                    #details
-                    dbc.Col(
-                        dbc.Row(dbc.Col(detail_card))
-                    )
-                ])
-            #])
+                #details
+                dbc.Col(
+                    dbc.Row(dbc.Col(detail_card))
+                )
+            ])
         ]
        
         layout_elements = [
@@ -225,18 +210,16 @@ if __name__ == '__main__':
     scanner.min_price = 2
     scanner.max_price = 200
     scanner.min_vol = 100000
-    
     df = scanner.market_data(["LNT", "WEC"])
 
     pair = Pair(["LNT","WEC"])
-    pair_view = PairView(pair)
-    #pair_view.set_pair(pair)
+
+    pair_view = PairView(pair, show_header=True)
     pair_view.market_data = df
     pair_view.set_callback_app(app)
     
     app.layout = html.Div(
         pair_view.get_layout()
     )
-
 
     app.run_server(debug=True, port=8060, threaded=True)

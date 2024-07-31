@@ -96,7 +96,8 @@ class Scanner(DataWrangler):
                 A, B,
                 volume_data[A].mean().astype(int), volume_data[B].mean().astype(int),
                 (close_data[A] - close_data[B]).abs().mean().round(3),
-                round(coint(close_data[A].fillna(0), close_data[B].fillna(0))[1], 3),
+                #round(coint(close_data[A].fillna(0), close_data[B].fillna(0))[1], 3),
+                1,
                 1
             ]
             pair_df.loc[pair_df.size, self.PAIRS_COLUMNS] = values
@@ -105,7 +106,7 @@ class Scanner(DataWrangler):
             if callback_func:
                 callback_func(pair_df.A.size / (len(pairs)))
 
-        return pair_df.reset_index(drop=True)
+        return pair_df.reset_index(drop=True), market_data
 
     def update_db(self):
         self.min_price = 2
@@ -128,6 +129,6 @@ if __name__ == '__main__':
     s.max_price = 200
     s.min_vol = 100
     s.industry = 'CRUDE PETROLEUM & NATURAL GAS'
-    x = s.get_pairs()
-    print(x)
+    x = s.get_pairs()[0]
+    print(x[x.coint > 0.02])
 

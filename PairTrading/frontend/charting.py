@@ -23,6 +23,7 @@ class DashChart:
         #default callback inputs
         if self.chartType == "candlestick":
             self.callback_inputs = [Input(f'{self.name}-toggle-bbands', "value")]
+            #self.callback_inputs.append(Input('interval-component', 'n_intervals'))
 
         elif self.chartType == "line":
             self.callback_inputs = [Input(f'{self.name}-toggle-bbands', "value")]
@@ -56,7 +57,8 @@ class DashChart:
             self.callback_inputs,
         )
         def appCallback(*args):
-            #print(ctx.inputs_list)
+            # print(self.callback_inputs)
+            # print(ctx.inputs_list)
 
             #Execute Pre-callbacks
             for f in self.pre_callback_functions:
@@ -105,7 +107,7 @@ class DashChart:
         fig = go.Figure(figures)
 
         fig.update_yaxes(
-            #anchor="free",
+            anchor="free",
             automargin=True,
             autorange=True
         )
@@ -124,7 +126,7 @@ class DashChart:
 
         figures = [
             go.Scatter(x=self._data[self.dataKeys['Time']], y=self._data[self.dataKeys['Close']], line_shape='linear', line={"width" : 2}),
-            go.Scatter(mode="markers", x=self.markers_df["time"], y=self.markers_df["price"]),
+            #go.Scatter(mode="markers", x=self.markers_df["time"], y=self.markers_df["price"]),
         ] 
 
         fig = go.Figure(figures)
@@ -196,17 +198,20 @@ class DashChart:
         cardContent = []
         if self.showHeader:
             cardContent = [dbc.CardHeader(html.H6(self.label, className="card-title"))]
-
+        
         if self.chartType == "candlestick":
             cardContent += [
                 dbc.CardBody([
                     dbc.Row([
-                        dbc.Col([dcc.Graph(id=f'{self.name}-graph')]),
-                        dcc.Interval(
+                        dbc.Col([
+                            dcc.Graph(id=f'{self.name}-graph'),
+                            dcc.Interval(
                             id='interval-component',
-                            interval=1*1000,  # in milliseconds
+                            interval=0.5*1000,  # in milliseconds
                             n_intervals=0
-                        )
+                            ),
+                            dcc.Store(id='trigger-update', data=0)
+                        ]),
                     ]),
 
                     dbc.Row([
@@ -238,8 +243,6 @@ class DashChart:
                     dbc.Row([
                         dbc.Col([
                             dbc.Checklist(id=f'{self.name}-toggle-normalize', options=[{'label': 'Normalize', 'value': True}], value=[True], switch=True),
-                            #dcc.Slider(id=f'{self.name}-scale', min=-10, max=10, value=1),
-                            #dcc.Slider(id=f'{self.name}-offset', min=-10, max=10, value=0)
                             "Scale",
                             dcc.Input(id=f'{self.name}-scale', value=1, type="number", step=0.001),
                             "Offset",
@@ -262,5 +265,53 @@ class DashChart:
         return layoutElements
 
 if __name__ == '__main__':
-    pass
+    from PairTrading.backend.scanner import Scanner
+    import numpy as np
+    import random
+    from threading import Thread
+    import time
 
+    app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
+
+    scanner=Scanner()
+    scanner.min_price = 5
+    scanner.max_price = 70
+    scanner.min_avg_vol = 500000
+    scanner.industry = 'STATE COMMERCIAL BANKS'
+
+    ticker_a = "AWR"
+    ticker_b = "MSEX"
+    market_data = scanner.market_data([ticker_a, ticker_b])
+
+    cchart = DashChart(f"cchart", "candlestick")
+    cchart.set_callback_app(app)
+
+    data_df = pd.DataFrame()
+
+    def gen_rand_data():
+        while True:
+            print("gen data")
+            data = []
+            for i in range(100):
+                d = {"date" : i, "open" : random.randrange(2,5), "close" : random.randrange(5,7), "high" : random.randrange(0,5), "low" : random.randrange(5,10)}
+                data.append(d)
+            global data_df
+            data_df = pd.DataFrame(data)
+            update_chart_data(data_df)
+            time.sleep(0.2)
+
+    def update_chart_data(data):
+        cchart.data = data
+    
+    #thread = Thread(target=gen_rand_data)
+    #thread.start()
+    
+    tickera_df = market_data[market_data['ticker'] == ticker_a]
+
+    cchart.label = "Test Chart"
+
+    app.layout = html.Div(
+        cchart.get_layout()
+    )
+
+    app.run_server(debug=True, port=8060)

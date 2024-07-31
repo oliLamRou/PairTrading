@@ -18,15 +18,22 @@ class DataUtils():
         return DataWrangler().market_data([ticker])[column_name].rolling(period).mean().to_list()[-1]
     
     @staticmethod
-    def get_average_volume(ticker: str, period=30) -> float:
-        return DataWrangler().market_data([ticker]).volume.rolling(period).mean().to_list()[-1]
+    def get_average_volume(ticker: str, period=30, market_data=pd.DataFrame()) -> float:
+        if market_data.empty:
+            return DataWrangler().market_data([ticker]).volume.rolling(period).mean().to_list()[-1]
+        
+        return market_data[market_data["ticker"] == ticker].volume.rolling(period).mean().to_list()[-1]
     
     @staticmethod
-    def get_last_price(ticker, period="day") -> float:
+    def get_last_price(ticker, period="day", market_data=pd.DataFrame()) -> float:
         #NOTE: Should we cut today directly in datawrangler?
-        today = pd.to_datetime(date.today())
-        df = DataWrangler().market_data([ticker])
-        df = df[(df.date != today)]
+        if market_data.empty:
+            today = pd.to_datetime(date.today())
+            df = DataWrangler().market_data([ticker])
+            df = df[(df.date != today)]
+            return df[df.date == df.date.max()].close.iloc[0]
+
+        df = market_data[market_data["ticker"] == ticker]
         return df[df.date == df.date.max()].close.iloc[0]
     
     @staticmethod

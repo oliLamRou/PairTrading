@@ -6,6 +6,7 @@ from PairTrading.backend.data_wrangler import DataWrangler
 from PairTrading.frontend.pair import Pair
 
 from dash import Dash, html, dcc, Input, Output, State, ctx, ALL
+import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import json
 
@@ -42,18 +43,22 @@ class ScannerView:
                 Input("minprice", "value"),
                 Input("maxprice", "value"),
                 Input("min_avg_vol", "value"),
-                Input("industry-select", "value"),
+                #Input("industry-select", "value"),
+                Input("industry-grid", "cellClicked"),
                 Input("max-avgdiff", "value"),
             ],
         )
         def apply_filter_callback(minprice, maxprice, min_avg_vol, industry, max_avg_diff):
-            if industry == "1" or industry == "---":
-                return ""
+            
+            # if industry == "1" or industry == "---":
+            #     return ""
               
             if minprice and maxprice and industry and min_avg_vol:
                 self.max_avg_diff = max_avg_diff
-
-                return self.filter_pairs(self.industry_list[int(industry)-2])
+                
+                #return industry.get("value")
+                return self.filter_pairs(industry.get("value"))
+                #return self.filter_pairs(self.industry_list[int(industry)-2])
             
             return ""
 
@@ -98,6 +103,7 @@ class ScannerView:
         self.sector_dropdown = [{"label": "---", "value": 1 }]
         self.industry_list = []
         self.industry_dropdown = self.sector_dropdown
+        gridData = []
 
         for i, industry in enumerate(industry_list):
             industry_df = ppairs[ppairs["industry"] == industry]
@@ -107,8 +113,19 @@ class ScannerView:
                 count = industry_df.get("potential_pair").iloc[0]
                 self.industry_list.append(industry)
                 self.industry_dropdown.append({"label": f"({count}) {industry}", "value": i+2})
+                gridData.append({"Industry" : industry, "Pairs" : count})
+
+        grid = dag.AgGrid(
+            id="industry-grid",
+            rowData=gridData,
+            columnDefs=[{"field": "Industry"}, {"field": "Pairs"}],
+            defaultColDef={"resizable": True, "sortable": True, "filter": True, "minWidth":125},
+            columnSize="sizeToFit",
+        )
+        self.industryGrid = grid
     
     def get_pairs_callback(self, percent):
+        print(f"getting pais: {percent*100}%")
         return
 
     def filter_pairs(self, industry):
@@ -117,7 +134,8 @@ class ScannerView:
         chart_counter = 0
         
         self.scanner.industry = industry
-        pairs_df = self.scanner.get_pairs(self.get_pairs_callback)
+        pairs_df, market_data_df = self.scanner.get_pairs(self.get_pairs_callback)
+
         
         if pairs_df.empty:
             return None
@@ -131,8 +149,9 @@ class ScannerView:
             ticker_b = row.B
             avg_diff = row.avg_diff
 
-            tickera_df = self.scanner.market_data([ticker_a])
-            tickerb_df = self.scanner.market_data([ticker_b])
+            tickera_df = market_data_df[market_data_df['ticker'] == ticker_a]
+            tickerb_df = market_data_df[market_data_df['ticker'] == ticker_b]
+
             self.pairs_list.append([ticker_a, ticker_b])
 
             if i > max_tickers:
@@ -150,6 +169,11 @@ class ScannerView:
 
             #Check default watchlist value
             pair_info = self.dw.get_pair_info([ticker_a, ticker_b]).fillna(0).to_dict()
+            
+            avg_vol_a = tickera_df.volume.rolling(30).mean().to_list()[-1]
+            avg_vol_b = tickerb_df.volume.rolling(30).mean().to_list()[-1]
+            last_a = tickera_df[tickera_df.date == tickera_df.date.max()].close.iloc[0]
+            last_b = tickerb_df[tickerb_df.date == tickerb_df.date.max()].close.iloc[0]
 
             chart_card = chart.get_layout()
             detail_card = dbc.Card([
@@ -158,20 +182,20 @@ class ScannerView:
                         dbc.Col([
                             html.H6(ticker_a),
                             info_a['name'].values[0], html.Br(),html.Br(),
-                            f"Last Price: ${du.get_last_price(ticker_a):,.2f}",html.Br(),
+                            f"Last Price: ${last_a:,.2f}",html.Br(),
                             f"Market Cap: {du.format_large_number(info_a.get('market_cap').values[0])}",html.Br(),
                             f"Shares Outstanding: {du.format_large_number(info_a.get('share_class_shares_outstanding').values[0])}",html.Br(),
-                            f"Volume: {du.format_large_number(du.get_average(ticker_a, 'volume', period=1))}", html.Br(),
-                            f"Average Volume (30D): {du.format_large_number(du.get_average_volume(ticker_a))}",
+                            #f"Volume: {du.format_large_number(du.get_average(ticker_a, 'volume', period=1))}", html.Br(),
+                            f"Average Volume (30D): {du.format_large_number(avg_vol_a)}"
                         ]),
                         dbc.Col([
                             html.H6(ticker_b),
                             info_b['name'].values[0], html.Br(),html.Br(),
-                            f"Last Price: ${du.get_last_price(ticker_b):,.2f}",html.Br(),
+                            f"Last Price: ${last_b:,.2f}",html.Br(),
                             f"Market Cap: {du.format_large_number(info_b.get('market_cap').values[0])}",html.Br(),
                             f"Shares Outstanding: {du.format_large_number(info_b.get('share_class_shares_outstanding').values[0])}",html.Br(),
-                            f"Volume: {du.format_large_number(du.get_average(ticker_b, 'volume', period=1))}", html.Br(),
-                            f"Average Volume (30D): {du.format_large_number(du.get_average_volume(ticker_b))}",
+                            #f"Volume: {du.format_large_number(du.get_average(ticker_b, 'volume', period=1))}", html.Br(),
+                            f"Average Volume (30D): {du.format_large_number(avg_vol_b)}",
                         ]),
                     ])
                 ]),
@@ -201,14 +225,22 @@ class ScannerView:
             dcc.Store(id='loader-output'),
             dbc.Card([       
                 dbc.CardHeader(html.H6("Scanner Filter", className="card-title")),
-                dbc.CardBody([
-                    dbc.InputGroup([dbc.InputGroupText("Min Price"), dbc.Input(id="minprice", type="number", value=10)]),
-                    dbc.InputGroup([dbc.InputGroupText("Max Price"), dbc.Input(id="maxprice", type="number", value=200)]),
-                    dbc.InputGroup([dbc.InputGroupText("Min 30D Average Volume"), dbc.Input(id="min_avg_vol", type="number", value=50000)]),
-                    dbc.InputGroup([dbc.InputGroupText("Industry"), dbc.Select(id="industry-select", options = self.industry_dropdown, value="---")]),
-                    #dbc.InputGroup([dbc.InputGroupText("Sector"), dbc.Select(id={"type" : "refresh-page-content", "index" : 1}, options = self.sector_dropdown, value="All")]),
-                    dbc.InputGroup([dbc.InputGroupText("Max Average Difference"), dbc.Input(id="max-avgdiff", type="number", value=self.max_avg_diff)])
-                ])
+                dbc.CardBody(
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.InputGroup([dbc.InputGroupText("Min Price"), dbc.Input(id="minprice", type="number", value=10)]),
+                            dbc.InputGroup([dbc.InputGroupText("Max Price"), dbc.Input(id="maxprice", type="number", value=200)]),
+                            dbc.InputGroup([dbc.InputGroupText("Min 30D Average Volume"), dbc.Input(id="min_avg_vol", type="number", value=50000)]),
+                            #dbc.InputGroup([dbc.InputGroupText("Industry"), dbc.Select(id="industry-select", options = self.industry_dropdown, value="---")]),
+                            
+                            #dbc.InputGroup([dbc.InputGroupText("Sector"), dbc.Select(id={"type" : "refresh-page-content", "index" : 1}, options = self.sector_dropdown, value="All")]),
+                            dbc.InputGroup([dbc.InputGroupText("Max Average Difference"), dbc.Input(id="max-avgdiff", type="number", value=self.max_avg_diff)])
+                        ]),
+                        dbc.Col(
+                            self.industryGrid
+                        )
+                    ])
+                )
             ])
         ])
 
@@ -225,7 +257,7 @@ class ScannerView:
     
 if __name__ == '__main__':
     print("ui_scannerview")
-    app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
+    app = Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN], suppress_callback_exceptions=True)
 
     scanner=Scanner()
     scanner.min_price = 2

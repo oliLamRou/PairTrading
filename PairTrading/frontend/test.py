@@ -10,11 +10,13 @@ import dash_bootstrap_components as dbc
 import json
 import pandas as pd
 
-scanner = Scanner()
-df = scanner.market_data("CMAX")
-print(df)
-print("test")
-print(ib.get_trades("CMAX"))
+df = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/solar.csv")
+print(df.to_dict("records"))
+# scanner = Scanner()
+# df = scanner.market_data("CMAX")
+# print(df)
+# print("test")
+# print(ib.get_trades("CMAX"))
 
 # data = [{"test1" : 1, "test2" : 2}, {"test1" : 34, "test2" : 9999}]
 # df = pd.DataFrame(data=data)
