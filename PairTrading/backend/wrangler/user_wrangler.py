@@ -9,12 +9,16 @@ class UserWrangler(DataBase):
     def __init__(self):
         self.__user_db = DataBase(_db_constant.USER_DB)
 
+    def get_tickers_in_allcap(tickers: list) -> list:
+        return [ticker.upper() for ticker in tickers]
+
     #PAIR INFO
     def is_good_pair(self, tickers: list):
         if type(tickers) != list or len(tickers) != 2:
             raise ValueError(f'tickers:({tickers}) must be a list of 2 elements')
 
     def get_pair_info(self, tickers: list) -> pd.Series():
+        tickers = self.get_tickers_in_allcap(tickers)
         #Return 1 row if valid pair of 2 tickers
         self.is_good_pair(tickers)
         df = self.__user_db.get_rows(_db_constant.PAIR_INFO_TABLE_NAME, 'pair', ['__'.join(tickers)])
@@ -27,11 +31,13 @@ class UserWrangler(DataBase):
         #return all rows with 1 in watchlist col
         return self.__user_db.get_rows(_db_constant.PAIR_INFO_TABLE_NAME, 'watchlist', 1)
 
-    def is_watchlist(ticker_pair: list) -> bool:
+    def is_watchlist(pair: list) -> bool:
         #return watchlist value
-        return self.get_pair_info(ticker_pair).fillna(0)['watchlist']
+        pair = self.get_tickers_in_allcap(pair)
+        return self.get_pair_info(pair).fillna(0)['watchlist']
 
     def format_pair_info_dict(self, tickers: list, pair_info: dict) -> dict:
+        tickers = self.get_tickers_in_allcap(tickers)
         tickers.sort()
         pair_info = pair_info.copy()
         pair_info['A'] = tickers[0]
@@ -41,6 +47,7 @@ class UserWrangler(DataBase):
 
     def update_pair_info(self, tickers: list, pair_info: dict) -> pd.Series():
         self.is_good_pair(tickers)
+
         pair_info = self.format_pair_info_dict(tickers, pair_info)
 
         if self.__user_db.has_value(_db_constant.PAIR_INFO_TABLE_NAME, 'pair', pair_info['pair']):
@@ -73,7 +80,3 @@ class UserWrangler(DataBase):
 
 if __name__ == '__main__':
     uw = UserWrangler()
-    uw.update_pair_info(['AAPL', 'MSTR'], {'watchlist': 1})
-    df = uw.get_pair_info(['AAPL', 'MSTR'])
-    print(df)
-    print(df.fillna(0))

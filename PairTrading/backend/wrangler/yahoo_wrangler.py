@@ -21,8 +21,9 @@ class YahooWrangler:
         failed_to_download = set(tickers).difference(downloaded_tickers)
         failed_to_download = failed_to_download.difference(previous_failed_tickers)
 
-        print(f'--> Adding {failed_to_download} to {_db_constant.FAILED_TICKER_TABLE_NAME}')
-        self.__yfinance_db.add_rows(_db_constant.FAILED_TICKER_TABLE_NAME, [tuple([ticker]) for ticker in failed_to_download], ['ticker'])
+        if failed_to_download:
+            print(f'--> Adding {failed_to_download} to {_db_constant.FAILED_TICKER_TABLE_NAME}')
+            self.__yfinance_db.add_rows(_db_constant.FAILED_TICKER_TABLE_NAME, [tuple([ticker]) for ticker in failed_to_download], ['ticker'])
 
     def market_data(self,
             tickers: list,
@@ -47,9 +48,12 @@ class YahooWrangler:
         else:
             downloaded_tickers = self.__yfinance_db.get_rows(_db_constant.MARKET_DATA_TABLE_NAME, 'ticker', tickers).ticker.unique()
             good_tickers = good_tickers.difference(downloaded_tickers)
+            
+
+        if good_tickers:
+            self.download_market_data(good_tickers, timespan, period)
             print(f'--> Trying to download: {good_tickers}\n')
 
-        self.download_market_data(good_tickers, timespan, period)
         self.manage_wrong_tickers(tickers)
 
         # READ and RETURN
@@ -86,4 +90,3 @@ if __name__ == '__main__':
     yw = YahooWrangler()
     tickers = ['COOP', 'MSTR']
     df = yw.market_data(tickers, update=False, period='1mo')
-    print(df)
