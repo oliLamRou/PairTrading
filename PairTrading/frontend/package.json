@@ -1,0 +1,24 @@
+{
+  "name": "pair_trading",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@headlessui/vue": "^1.7.22",
+    "axios": "^1.7.3",
+    "bootstrap": "^5.3.3",
+    "lightweight-charts": "^4.2.0",
+    "qs": "^6.13.0",
+    "vue": "^3.4.29",
+    "vuetify": "^3.6.14"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.5",
+    "vite": "^5.3.1"
+  }
+}

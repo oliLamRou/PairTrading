@@ -95,7 +95,7 @@ class Scanner(DataWrangler):
             values = [
                 A, B,
                 volume_data[A].mean().astype(int), volume_data[B].mean().astype(int),
-                (close_data[A] - close_data[B]).abs().mean().round(3),
+                round((close_data[A] - close_data[B]).abs().mean(), 3),
                 round(coint(close_data[A].fillna(0), close_data[B].fillna(0))[1], 3),
                 1
             ]
@@ -127,7 +127,4 @@ if __name__ == '__main__':
     s.min_price = 5
     s.max_price = 200
     s.min_vol = 100
-    s.industry = 'CRUDE PETROLEUM & NATURAL GAS'
-    x = s.get_pairs()
-    print(x)
-
+    s.industry = 'REAL ESTATE'
