@@ -11,4 +11,8 @@ dependencies:
   - python=3.11
   - dash
   - dash-bootstrap-components
+  - dash-ag-grid
   - yfinance
+  - flask
+  - werkzeug=2.2.2
+  - flask-cors

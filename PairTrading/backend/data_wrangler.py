@@ -10,5 +10,5 @@ class DataWrangler(YahooWrangler, PolygonWrangler, UserWrangler):
 
 if __name__ == '__main__':
     dw = DataWrangler()
-    df = dw.market_data(['wec'])
-    df.to_csv('wec', index=False)
+    df = dw.market_data(['wec', 'MSTR'])
+    print(df.to_json(orient='records'))
