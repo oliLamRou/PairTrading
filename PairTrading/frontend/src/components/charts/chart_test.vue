@@ -1,7 +1,7 @@
 <script setup>
   import { ref, watch, defineProps, onMounted, computed } from 'vue';
   import axios from 'axios';
-  import LWChart from '@/components/LWChart.vue';
+  import LWChart from '@/components/charts/LWChart.vue';
   import qs from 'qs';
 
   const data = ref(null);

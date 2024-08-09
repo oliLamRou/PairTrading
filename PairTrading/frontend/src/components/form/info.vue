@@ -28,10 +28,6 @@
       "Share": "share_class_shares_outstanding"
     })
 
-  onMounted(() => {
-    console.log(props.info)
-  })
-
 </script>
 
 <template>

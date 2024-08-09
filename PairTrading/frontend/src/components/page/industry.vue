@@ -1,7 +1,7 @@
 <script setup>
   import { ref, onMounted, watch, reactive, computed } from 'vue'
   import axios from 'axios'
-  import charts from '@/components/chart_list.vue';
+  import charts from '@/components/charts/chart_list.vue';
 
   const industries = ref(null);
   const min_price = ref(5);
@@ -24,7 +24,6 @@
   };
 
   const fetchPairs = async (industry) => {
-    console.log("Fetch Pairs")
     try {
       const response = await axios.get('http://localhost:5002/get_pairs', {
         params: {

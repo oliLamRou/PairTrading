@@ -51,7 +51,7 @@
   });  
 
   onMounted(() => {
-    chart = createChart(chartContainer.value, { width: 10, height: 400 });
+    chart = createChart(chartContainer.value, { width: 400, height: 400 });
 
     if (props.type === 'candle') {
       seriesA = chart.addCandlestickSeries()  

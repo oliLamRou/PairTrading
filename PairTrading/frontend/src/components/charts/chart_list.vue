@@ -1,8 +1,8 @@
 <script setup>
   import { ref, computed, watch, defineProps } from 'vue';
   import axios from 'axios';
-  import LWChart from '@/components/LWChart/pair.vue';
-  import info from '@/components/info.vue';
+  import LWChart from '@/components/charts/LWChart.vue';
+  import info from '@/components/form/info.vue';
   import qs from 'qs';
 
   const data = ref([]);
@@ -89,7 +89,7 @@
       <!-- Chart -->
       <div class="col-8">
         <div>
-          <LWChart :data="data"/>
+          <LWChart :A="data.A" :B="data.B"/>
         </div>
       </div>
       <!-- Info -->
