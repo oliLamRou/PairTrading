@@ -1,13 +1,3 @@
 <template>
-  <!-- <industry/> -->
-  <pair/>
+  <router-view/>
 </template>
-
-<script setup>
-  import industry from '@/components/page/industry.vue';
-  import pair from '@/components/charts/pair.vue';
-</script>
-
-<style scoped>
-
-</style>

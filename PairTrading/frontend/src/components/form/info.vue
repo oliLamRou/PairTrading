@@ -1,6 +1,7 @@
 <script setup>
   import { reactive, computed, onMounted, defineProps, ref } from 'vue'
   import axios from 'axios'
+  import { useRouter } from 'vue-router'
 
   const props = defineProps({
     info: {
@@ -28,6 +29,14 @@
       "Share": "share_class_shares_outstanding"
     })
 
+  const router = useRouter()
+
+  const goBack = () => {
+    const pair = [props.info[0].ticker, props.info[1].ticker].join('__')
+    const url = router.resolve({ name: 'Details', params: { pair: pair } }).href
+    window.open(url, '_blank')
+  }
+
 </script>
 
 <template>
@@ -41,7 +50,7 @@
       </div>
     </div>
     <div class="row d-inline-flex mt-5">
-      <button type="button" class="btn btn-primary">Pair Details</button>
+      <button type="button" class="btn btn-primary" @click="goBack">Pair Details</button>
     </div>
   </div>
 </template>

@@ -54,4 +54,22 @@ def get_info():
         info = s.all_ticker_info[s.all_ticker_info.sic_code == sic_code]
         return info.to_json(orient='records')
 
+        
+@app.route('/get_pair_info', methods=['GET'])
+def get_pair_info():
+    tickers = request.args.getlist('tickers')
+    df = s.get_pair_info(tickers)
+
+    return df.to_json()
+
+@app.route('/update_pair_info', methods=['POST'])
+def update_pair_info():
+    tickers = request.json.get('tickers')
+    pairInfo = request.json.get('pairInfo')
+    if not tickers:
+        return {}
+
+    df = s.update_pair_info(tickers, pairInfo)
+    return df.to_json()    
+    
 app.run(debug=True, port=5002)
