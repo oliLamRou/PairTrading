@@ -1,7 +1,10 @@
 <script setup>
-  import { ref, onMounted, watch, reactive, computed } from 'vue'
+  import { ref, onMounted, onBeforeMount, watch, reactive, computed } from 'vue'
   import axios from 'axios'
   import charts from '@/components/charts/chart_list.vue';
+  import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the Data Grid
+  import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
+  import { AgGridVue } from "ag-grid-vue3"; // Vue Data Grid Component
 
   const industries = ref(null);
   const min_price = ref(5);
@@ -9,10 +12,14 @@
   const min_volume = ref(1000);
   const max_volume = ref(100000000);
 
-  const selectedIndustry = ref('Choose...');
+  const selectedIndustry = ref(null);
   const pairs = ref([]);
   const company_info = ref([]);
   const ratio = ref(0.15);
+
+  const rowData = ref(null);
+  const rowSelection = ref(null);
+  const loading = ref(false);
 
   const fetchIndustries = async () => {
     try {
@@ -22,8 +29,9 @@
       console.error(error);
     }
   };
-
+  
   const fetchPairs = async (industry) => {
+    loading.value = true;
     try {
       const response = await axios.get('http://localhost:5002/get_pairs', {
         params: {
@@ -35,8 +43,10 @@
         }
       });
       pairs.value = response.data;
+      loading.value = false;
     } catch (error) {
       console.error(error);
+      loading.value = false;
     }
   };
 
@@ -49,16 +59,31 @@
     } catch (error) {
       console.error(error);
     }
-  };  
+  }; 
 
-  onMounted(() => {
+  const onRowClicked = (value) => {
+    if(!loading.value){
+      selectedIndustry.value = value.data.industry
+      loading.value = true;
+    }
+  }
+
+  onBeforeMount(() => {
     fetchIndustries();
   });
+
+  watch(industries, (newIndustries) => {
+        if (newIndustries) {
+            rowData.value = newIndustries;
+            console.log("fetched indu")
+        }
+    });
 
   watch(selectedIndustry, (newIndustry) => {
     if (newIndustry) {
       console.log('CHANGE')
       fetchPairs(newIndustry)
+      loading.value = false;
       fetch_company_info(newIndustry)
     }
   });
@@ -66,6 +91,11 @@
   const filter_diff = computed(()=>{
     return pairs.value.filter(item => item.avg_diff < ratio.value)
   })
+
+  const colDefs = ref([
+    { field: "industry", flex: 1 },
+    { field: "potential_pair", flex: 1 },
+  ]);
 
 </script>
 
@@ -87,16 +117,18 @@
         </div>
 
         <div class="input-group mb-1" v-if="industries">
-          <label class="input-group-text" for="inputGroupSelect01">Industry</label>
-          <select class="form-select" id="inputGroupSelect01" v-model="selectedIndustry">
-            <option selected >Choose...</option>
-            <option v-for="(industry, index) in industries" :key="industry" :value="industry.industry">
-              {{industry.potential_pair}} - {{industry.industry}}
-            </option>
-          </select>
-          <button type="button" class="btn btn-primary">Submit</button>
-          <button type="button" class="btn btn-secondary">Reset</button>
+          
         </div>
+        <ag-grid-vue
+            :rowData="rowData"
+            :columnDefs="colDefs"
+            style="height: 250px"
+            class="ag-theme-quartz"
+            @rowClicked="onRowClicked"
+            :rowSelection="rowSelection"
+            :suppressRowClickSelection="true"
+          >
+          </ag-grid-vue>
         <div class="input-group mb-1">
           <span class="input-group-text">Ratio</span>
           <input type="number" class="form-control" aria-label="ratio" step="0.01" min="0" value=0.15 v-model="ratio">

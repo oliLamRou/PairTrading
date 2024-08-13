@@ -1,6 +1,8 @@
 <script setup>
   import { ref, onMounted, onUnmounted, watch, defineProps, computed, reactive } from 'vue';
-  import { createChart } from 'lightweight-charts';
+  import { Indicators, IndicatorStyle } from '@/utils/indicators.js'
+
+  import { createChart, LineStyle, LineType, CrosshairMode} from 'lightweight-charts';
 
   const props = defineProps({
     A: {
@@ -48,16 +50,28 @@
   });  
 
   onMounted(() => {
-    chart = createChart(chartContainer.value, { width: 400, height: 400 });
-
+    chart = createChart(chartContainer.value, { width: 400, height: 400});
+    chart.applyOptions({
+      crosshair: {
+        mode: CrosshairMode.Normal, // Keep crosshair in normal mode
+      },
+    });
+    
     if (props.type === 'candle') {
-      seriesA = chart.addCandlestickSeries()  
+      seriesA = chart.addCandlestickSeries()
+      //addSMA()
+      // addBB()
+       //addVWAP();
+      // addTripleEMA();
+      //addVolume();
     } else {
       seriesA = chart.addLineSeries();
       if (props.B) {
         seriesB = chart.addLineSeries({ color: 'rgb(225, 87, 90)' });
+        
       }
     }
+    
     
     seriesA.setData(props.A);
     if (seriesB) {
@@ -72,7 +86,12 @@
     () => [props, userInput],
     newData => {
       if (seriesA) {
-          seriesA.setData(computed_A.value);
+          seriesA.setData(computed_A.value)
+          //addSMA() 
+          // addBB()
+          //addVWAP();
+          // addTripleEMA();
+          //addVolume();
       };
       if (seriesB) {
           seriesB.setData(computed_B.value);
@@ -80,12 +99,14 @@
     },
     { deep: true }
   );
+  
 
   const computed_A = computed( ()=> {
     if (userInput.normalize) {
       return normalizeIt(props.A)
     }
     return props.A
+    
   })
 
   const computed_B = computed( ()=> {
@@ -121,6 +142,46 @@
 
   function triggerNormalize() {
     userInput.normalize = !userInput.normalize
+  }
+
+  const addSMA = () => {
+    const sma = Indicators.LW_SMA({period: 30, values: computed_A.value})
+    let smaA = chart.addLineSeries(IndicatorStyle.SMA);
+    smaA.setData(sma)
+  }
+
+  const addVWAP = () => {
+    const vwap = Indicators.LW_VWAP({values: computed_A.value})
+    let vwapA = chart.addLineSeries(IndicatorStyle.VWAP);
+    vwapA.setData(vwap)
+  }
+
+  const addVolume = () => {
+    const volData = Indicators.LW_Volume({values: computed_A.value})
+    let vol = chart.addHistogramSeries();
+    vol.setData(volData)
+  }
+
+  const addBB = () => {
+    const bbands = Indicators.LW_BollingerBands({period: 18, values: computed_A.value, stdDev: 2})
+    let bbUpper = chart.addLineSeries(IndicatorStyle.BollingerBands.upper);
+    let bbLower = chart.addLineSeries(IndicatorStyle.BollingerBands.lower);
+    let bbMiddle = chart.addLineSeries(IndicatorStyle.BollingerBands.middle);
+    
+    bbUpper.setData(bbands.upper)
+    bbMiddle.setData(bbands.middle)
+    bbLower.setData(bbands.lower)
+  }
+
+  const addTripleEMA = () => {
+    const tripleEMA = Indicators.LW_TripleEMA({first: 10, second: 50, third: 200, values: computed_A.value})
+    let firstEMA = chart.addLineSeries(IndicatorStyle.TripleEMA.first);
+    let secondEMA = chart.addLineSeries(IndicatorStyle.TripleEMA.second);
+    let thirdEMA = chart.addLineSeries(IndicatorStyle.TripleEMA.third);
+    
+    firstEMA.setData(tripleEMA.first)
+    secondEMA.setData(tripleEMA.second)
+    thirdEMA.setData(tripleEMA.third)
   }
 
 </script>
