@@ -1,5 +1,5 @@
 <script setup>
-  import { ref, computed, watch, defineProps } from 'vue';
+  import { ref, computed, watch } from 'vue';
   import axios from 'axios';
   import LWChart from '@/components/charts/LWChart.vue';
   import info from '@/components/form/info.vue';
@@ -11,15 +11,15 @@
       type: Array,
       required: true,
     },
-    info: {
+    company_info: {
       type: Array,
       required: true,
     }
   });
 
-  const fetchData = async () => {
+  const fetch_market_data = async () => {
     try {
-      const response = await axios.get('http://localhost:5002/get_df', {
+      const response = await axios.get('http://localhost:5002/get_market_data', {
         params: { tickers: uniqueTicker.value },
         paramsSerializer: params => {
          return qs.stringify(params, { arrayFormat: 'repeat' });
@@ -31,7 +31,7 @@
     }
   };
 
-  function getTicker(ticker) {
+  function getClose(ticker) {
     const result = data.value.filter(item => item.ticker === ticker).map(
       item => ({
         time: item.date / 1000,
@@ -54,8 +54,8 @@
   const pairData = computed(()=>{
     const pair_data = props.pairs.map(item => ({
         pair: [item.A, item.B],
-        A: getTicker(item.A),
-        B: getTicker(item.B),
+        A: getClose(item.A),
+        B: getClose(item.B),
       })
     )
     console.log(pair_data)
@@ -65,15 +65,15 @@
   function pairInfo(pair) {
     //Forcing data to be in the right order
     return [
-      ...props.info.filter(item => item.ticker === pair[0]),
-      ...props.info.filter(item => item.ticker === pair[1])
+      ...props.company_info.filter(item => item.ticker === pair[0]),
+      ...props.company_info.filter(item => item.ticker === pair[1])
     ]
   }
 
   watch(
     () => props.pairs,
     (newTickers) => {
-      fetchData()      
+      fetch_market_data()
     }
   )
 

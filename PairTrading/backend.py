@@ -40,18 +40,36 @@ def get_pairs():
 
     return {}
 
-@app.route('/get_df', methods=['GET'])
-def get_df():
+@app.route('/get_market_data', methods=['GET'])
+def market_data():
     tickers = request.args.getlist('tickers')
     df = s.market_data(tickers)
     return df.to_json(orient='records')
 
-@app.route('/get_info', methods=['GET'])
-def get_info():
+@app.route('/company_info', methods=['GET'])
+def company_info():
     industry = request.args.get('industry')
     if industry:
         sic_code = s.sic_code[s.sic_code['industry_title'] == industry].sic_code.iloc[0]
-        info = s.all_ticker_info[s.all_ticker_info.sic_code == sic_code]
-        return info.to_json(orient='records')
+        company_info = s.all_ticker_info[s.all_ticker_info.sic_code == sic_code]
+        return company_info.to_json(orient='records')
 
+        
+@app.route('/get_pair_info', methods=['GET'])
+def pair_info():
+    tickers = request.args.getlist('tickers')
+    df = s.get_pair_info(tickers)
+
+    return df.to_json()
+
+@app.route('/update_pair_info', methods=['POST'])
+def update_pair_info():
+    tickers = request.json.get('tickers')
+    pairInfo = request.json.get('pairInfo')
+    if not tickers:
+        return {}
+
+    df = s.update_pair_info(tickers, pairInfo)
+    return df.to_json()    
+    
 app.run(debug=True, port=5002)

@@ -14,7 +14,7 @@
 
   const selectedIndustry = ref(null);
   const pairs = ref([]);
-  const info = ref([]);
+  const company_info = ref([]);
   const ratio = ref(0.15);
 
   const rowData = ref(null);
@@ -50,12 +50,12 @@
     }
   };
 
-  const fetchInfo = async (industry) => {
+  const fetch_company_info = async (industry) => {
     try {
-      const response = await axios.get('http://localhost:5002/get_info', {
+      const response = await axios.get('http://localhost:5002/company_info', {
         params: {industry: industry}
       });
-      info.value = response.data;
+      company_info.value = response.data;
     } catch (error) {
       console.error(error);
     }
@@ -81,9 +81,10 @@
 
   watch(selectedIndustry, (newIndustry) => {
     if (newIndustry) {
+      console.log('CHANGE')
       fetchPairs(newIndustry)
-      fetchInfo(newIndustry)
       loading.value = false;
+      fetch_company_info(newIndustry)
     }
   });
 
@@ -140,7 +141,7 @@
   
     <div class="row">
       <div>
-        <charts :pairs="filter_diff" :info="info"/>
+        <charts :pairs="filter_diff" :company_info="company_info"/>
       </div>
     </div>
   </div>

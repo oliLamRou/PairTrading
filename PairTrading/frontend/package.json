@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "backend": "conda run -n pair_trading python ../backend.py",
+    "frontend": "vite",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -13,10 +15,12 @@
     "ag-grid-vue3": "^32.1.0",
     "axios": "^1.7.3",
     "bootstrap": "^5.3.3",
+    "concurrently": "^8.2.2",
     "lightweight-charts": "^4.2.0",
     "qs": "^6.13.0",
     "technicalindicators": "^3.1.0",
-    "vue": "^3.4.29"
+    "vue": "^3.4.29",
+    "vue-router": "^4.4.3"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.5",

@@ -9,7 +9,7 @@ class UserWrangler(DataBase):
     def __init__(self):
         self.__user_db = DataBase(_db_constant.USER_DB)
 
-    def get_tickers_in_allcap(tickers: list) -> list:
+    def get_tickers_in_allcap(self, tickers: list) -> list:
         return [ticker.upper() for ticker in tickers]
 
     #PAIR INFO
@@ -18,9 +18,10 @@ class UserWrangler(DataBase):
             raise ValueError(f'tickers:({tickers}) must be a list of 2 elements')
 
     def get_pair_info(self, tickers: list) -> pd.Series():
-        tickers = self.get_tickers_in_allcap(tickers)
+        tickers = self.get_tickers_in_allcap(tickers)        
         #Return 1 row if valid pair of 2 tickers
         self.is_good_pair(tickers)
+        tickers.sort()
         df = self.__user_db.get_rows(_db_constant.PAIR_INFO_TABLE_NAME, 'pair', ['__'.join(tickers)])
         if df.empty:
             return pd.Series()
@@ -49,6 +50,7 @@ class UserWrangler(DataBase):
         self.is_good_pair(tickers)
 
         pair_info = self.format_pair_info_dict(tickers, pair_info)
+        print('dict', pair_info)
 
         if self.__user_db.has_value(_db_constant.PAIR_INFO_TABLE_NAME, 'pair', pair_info['pair']):
             self.__user_db.update_row(_db_constant.PAIR_INFO_TABLE_NAME, pair_info, 'pair', pair_info['pair'])
@@ -80,3 +82,4 @@ class UserWrangler(DataBase):
 
 if __name__ == '__main__':
     uw = UserWrangler()
+    print(uw.get_pair_info(['ARKK', 'ARKG']))
