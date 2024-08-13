@@ -1,5 +1,5 @@
 <script setup>
-  import { ref, watch, defineProps, onMounted, computed } from 'vue';
+  import { ref, watch, onMounted, computed } from 'vue';
   import axios from 'axios';
   import LWChart from '@/components/charts/LWChart.vue';
   import qs from 'qs';
