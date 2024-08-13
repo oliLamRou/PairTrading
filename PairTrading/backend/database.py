@@ -123,6 +123,5 @@ class DataBase:
 
 if __name__ == '__main__':
     from PairTrading.src import _constant
-    db = DataBase('../../data/local/yfinance.db')
-    # print(db.list_tables())
-    print(db.get_table('failed_ticker'))
+    db = DataBase('../../data/local/user.db')
+    print(db.get_table('pair_info'))

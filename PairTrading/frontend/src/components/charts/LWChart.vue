@@ -3,10 +3,6 @@
   import { createChart } from 'lightweight-charts';
 
   const props = defineProps({
-    // data: {
-    //   type: Object,
-    //   required: true,
-    // },
     A: {
       type: Array,
       required: true,
@@ -23,6 +19,7 @@
   let chart;
   let seriesA;
   let seriesB;
+  let BBUL;
   const chartContainer = ref();
   const userInput = reactive({
     normalize: false,
@@ -152,7 +149,7 @@
     <input type="number" class="form-control" step="0.1" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-sm" value=0 v-model="userInput.offset" :disabled="userInput.normalize">
   </div>
 
-  <!-- Candle  or Single -->
+  <!-- Candle or Single -->
   <div class="input-group input-group-sm mb-3 options" v-if="props.type === 'candle' || props.type === 'single'">
     <!-- BB -->
     <div class="form-check form-switch">
