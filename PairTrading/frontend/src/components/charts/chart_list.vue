@@ -58,6 +58,7 @@
         B: getTicker(item.B),
       })
     )
+    console.log(pair_data)
     return pair_data
   })
 

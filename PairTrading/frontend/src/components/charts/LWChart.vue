@@ -59,20 +59,22 @@
         mode: CrosshairMode.Normal, // Keep crosshair in normal mode
       },
     });
-
     
     if (props.type === 'candle') {
       seriesA = chart.addCandlestickSeries()
-      addSMA()
-      addBB()
-      addVWAP();
-      addTripleEMA();
+      //addSMA()
+      // addBB()
+       //addVWAP();
+      // addTripleEMA();
+      //addVolume();
     } else {
       seriesA = chart.addLineSeries();
       if (props.B) {
         seriesB = chart.addLineSeries({ color: 'rgb(225, 87, 90)' });
+        
       }
     }
+    
     
     seriesA.setData(props.A);
     if (seriesB) {
@@ -88,10 +90,11 @@
     newData => {
       if (seriesA) {
           seriesA.setData(computed_A.value)
-          addSMA()
-          addBB()
-          addVWAP();
-          addTripleEMA();
+          //addSMA() 
+          // addBB()
+          //addVWAP();
+          // addTripleEMA();
+          //addVolume();
       };
       if (seriesB) {
           seriesB.setData(computed_B.value);
@@ -99,12 +102,14 @@
     },
     { deep: true }
   );
+  
 
   const computed_A = computed( ()=> {
     if (userInput.normalize) {
       return normalizeIt(props.A)
     }
     return props.A
+    
   })
 
   const computed_B = computed( ()=> {
@@ -152,6 +157,12 @@
     const vwap = Indicators.LW_VWAP({values: computed_A.value})
     let vwapA = chart.addLineSeries(IndicatorStyle.VWAP);
     vwapA.setData(vwap)
+  }
+
+  const addVolume = () => {
+    const volData = Indicators.LW_Volume({values: computed_A.value})
+    let vol = chart.addHistogramSeries();
+    vol.setData(volData)
   }
 
   const addBB = () => {

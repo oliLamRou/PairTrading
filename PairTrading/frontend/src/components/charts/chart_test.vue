@@ -32,7 +32,8 @@
         open: item.open,
         high: item.high,
         low: item.low,
-        close: item.close
+        close: item.close,
+        volume: item.volume,
       })
     );
     return result;

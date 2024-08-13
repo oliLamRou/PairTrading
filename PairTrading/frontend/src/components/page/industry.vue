@@ -19,6 +19,7 @@
 
   const rowData = ref(null);
   const rowSelection = ref(null);
+  const loading = ref(false);
 
   const fetchIndustries = async () => {
     try {
@@ -30,6 +31,7 @@
   };
   
   const fetchPairs = async (industry) => {
+    loading.value = true;
     try {
       const response = await axios.get('http://localhost:5002/get_pairs', {
         params: {
@@ -41,8 +43,10 @@
         }
       });
       pairs.value = response.data;
+      loading.value = false;
     } catch (error) {
       console.error(error);
+      loading.value = false;
     }
   };
 
@@ -58,8 +62,10 @@
   }; 
 
   const onRowClicked = (value) => {
-    //console.log("clicked", value.data.industry)
-    selectedIndustry.value = value.data.industry
+    if(!loading.value){
+      selectedIndustry.value = value.data.industry
+      loading.value = true;
+    }
   }
 
   onBeforeMount(() => {
@@ -77,6 +83,7 @@
     if (newIndustry) {
       fetchPairs(newIndustry)
       fetchInfo(newIndustry)
+      loading.value = false;
     }
   });
 
@@ -118,7 +125,7 @@
             class="ag-theme-quartz"
             @rowClicked="onRowClicked"
             :rowSelection="rowSelection"
-            :suppressRowClickSelection="false"
+            :suppressRowClickSelection="true"
           >
           </ag-grid-vue>
         <div class="input-group mb-1">

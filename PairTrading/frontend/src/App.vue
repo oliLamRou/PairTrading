@@ -1,6 +1,6 @@
 <template>
-  <chart_test/>
-  <!-- <industry/> -->
+  <!-- <chart_test/> -->
+  <industry/>
   <!-- <pair/> -->
   <!-- <agGrid/> -->
 </template>

@@ -104,12 +104,23 @@ export class Indicators {
         return smaSeries
     }
 
+    static LW_Volume(input){
+        const vol = input.values.map(candle => candle.volume);
+        const volSeries = input.values.slice(2).map((candle, index) => ({
+            time: candle.time,
+            value: vol[index]
+        }))
+
+        return volSeries
+    }
+
     static LW_VWAP(input){
         const vwInput = {
             high: input.values.map(candle => candle.high),
             low: input.values.map(candle => candle.low),
             close: input.values.map(candle => candle.close),
-            volume: input.values.map(candle => Math.round((candle.value-20) * 100)), // TEMP volume, need to add it to series data
+            volume: input.values.map(candle => Math.round(candle.volume)),
+            //volume: input.values.map(candle => Math.round((candle.value-20) * 100)), // TEMP volume, need to add it to series data
         };
 
         const vwapData = VWAP.calculate(vwInput);
