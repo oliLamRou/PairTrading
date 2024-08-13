@@ -9,9 +9,9 @@
     return ['ARKK', 'ARKG']
   })
 
-  const fetchData = async () => {
+  const fetch_market_data = async () => {
     try {
-      const response = await axios.get('http://localhost:5002/get_df', {
+      const response = await axios.get('http://localhost:5002/get_market_data', {
         params: { tickers: pair.value },
         paramsSerializer: params => {
           return qs.stringify(params, { arrayFormat: 'repeat' });
@@ -39,7 +39,7 @@
   };
 
   onMounted( async () => {
-    await fetchData();
+    await fetch_market_data();
   });
 </script>
 
