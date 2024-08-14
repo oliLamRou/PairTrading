@@ -93,9 +93,3 @@
     <button type="button" class="btn btn-primary mt-3" @click="save()">Save</button>
   </form>
 </template>
-
-<style>
-  .custom-card {
-  max-width: 600px;
-  }
-</style>

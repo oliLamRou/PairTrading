@@ -67,7 +67,7 @@ class Scanner(DataWrangler):
         return set(df)
 
     #@property
-    def get_pairs(self, callback_func=None) -> pd.DataFrame():
+    def get_pairs(self) -> pd.DataFrame():
         if not self.sic:
             return pd.DataFrame()
         
@@ -101,10 +101,7 @@ class Scanner(DataWrangler):
             ]
             pair_df.loc[pair_df.size, self.PAIRS_COLUMNS] = values
 
-            #Progress bar
-            if callback_func:
-                callback_func(pair_df.A.size / (len(pairs)))
-
+        print('Scanner GET PAIRS', pair_df)
         return pair_df.reset_index(drop=True)
 
     def update_db(self):

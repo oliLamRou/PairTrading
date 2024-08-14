@@ -34,6 +34,6 @@
 
 <style>
 	.trade_col {
-		width: 500px;
+		max-width: 30%;
 	}
 </style>
