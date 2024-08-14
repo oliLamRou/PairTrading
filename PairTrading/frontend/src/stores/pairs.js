@@ -9,7 +9,7 @@ export const usePairForm = defineStore('pairForm',{
     	  this.pairs[pair] = {'hedge_ratio': 70}
 	  },
     	get_hedge_ratio(pair){
-				return this.pairs[pair].get(hedge_ratio)
+				return this.pairs[pair].hedge_ratio
   	}
 	}
 })
