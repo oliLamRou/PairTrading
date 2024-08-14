@@ -1,16 +1,22 @@
 <script setup>
-	import {ref, reactive, onMounted } from 'vue';
+	import {ref, reactive, onMounted, computed } from 'vue';
 	import pair_trade from '@/components/form/pair_trade.vue';
 	import pair_details from '@/components/charts/pair_details.vue';
 	import { useRoute } from 'vue-router'
 	import { usePairForm } from '@/stores/pairs';
 
 	const route = useRoute();
-  	const store = usePairForm();
+	const store = usePairForm();
+	const isDataLoaded = ref(false);
 
-	onMounted( ()=> {
-		store.add(route.params.pair)
+	const pair = computed( () => {
+		return route.params.pair;
 	})
+
+	onMounted( async () => {
+		await store.load(pair.value);
+  	isDataLoaded.value = true;
+	})	
 
 </script>
 
@@ -24,8 +30,8 @@
 				<div class="col chart_col">
 					<pair_details/>
 				</div>
-				<div class="col trade_col">
-					<pair_trade/>			
+				<div class="col trade_col" v-if="isDataLoaded">
+					<pair_trade/>
 				</div>		
 			</div>
 		</div>
