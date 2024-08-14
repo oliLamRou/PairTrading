@@ -1,10 +1,14 @@
 <script setup>
-  import { reactive, ref, watch, onMounted, onUnmounted } from 'vue';
+  import { reactive, ref, watch, onMounted, onUnmounted, computed } from 'vue';
   import axios from 'axios';
   import qs from 'qs';
   import { useRoute } from 'vue-router'
+  import { usePairForm } from '@/stores/pairs';
+  
+  const store = usePairForm();
 
   const pairInfo = reactive({
+    pair: null,
     A: null,
     B: null,
     reverse: false,
@@ -15,6 +19,12 @@
 
   const route = useRoute();
 
+  //Computed
+  const pair_price = computed(()=> {
+    return 100 * pairInfo.hedge_ratio
+  });
+
+  //backend
   const fetchPairInfo = async () => {
     try {
       const response = await axios.get('http://localhost:5002/get_pair_info', {
@@ -48,27 +58,28 @@
   };  
 
   onMounted(() => {
-    const pair = route.params.pair.split('__')
-    pairInfo.A = pair[0]
-    pairInfo.B = pair[1]
+    pairInfo.pair = route.params.pair
+    pairInfo.A = pairInfo.pair.split('__')[0]
+    pairInfo.B = pairInfo.pair.split('__')[1]
     fetchPairInfo()
   })
 
-  onUnmounted( () => {
-    console.log("onUnmounted")
-    save()
-  })
-
   function save() {
+    console.log('saving', pairInfo)
     updatePairInfo()
   }
+
+  const hedge_ratio = computed( () => {
+    return store.get_hedge_ratio(pairInfo.pair)
+    // return 1
+  })
 
 </script>
 
 <template>
   <form>
     <h3>{{pairInfo.A}} - {{pairInfo.B}}</h3>
-    <h5 class="mt-3">Pair Price: $999</h5>
+    <h5 class="mt-3">Pair Price: ${{pair_price}}</h5>
     <ul>
       <li>{{pairInfo.A}} Dollar volume Average: $999,999,999</li>
       <li>{{pairInfo.B}} Dollar volume Average: $999,999,999</li>
@@ -84,7 +95,7 @@
     </div>
     <div class="input-group input-group-sm mt-1">
       <span class="input-group-text" id="inputGroup-sizing-sm">Hedge Ratio</span>
-      <input type="number" class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-sm" v-model="pairInfo.hedge_ratio" step="0.01">
+      <input type="number" class="form-control" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-sm" :value="store.get_hedge_ratio(pairInfo.pair)" step="0.01">
     </div>    
     <div class="input-group input-group-sm mt-1">
       <span class="input-group-text" id="inputGroup-sizing-sm">Notes</span>
