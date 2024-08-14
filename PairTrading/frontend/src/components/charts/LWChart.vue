@@ -50,7 +50,7 @@
   });  
 
   onMounted(() => {
-    chart = createChart(chartContainer.value, { width: 400, height: 400});
+    chart = createChart(chartContainer.value, { width: 400, height: 350});
     chart.applyOptions({
       crosshair: {
         mode: CrosshairMode.Normal, // Keep crosshair in normal mode
