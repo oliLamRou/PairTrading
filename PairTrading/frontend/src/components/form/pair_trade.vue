@@ -41,6 +41,11 @@
     store.update_hedge_ratio(pair, newData)
   });
 
+  watch(() => userInput.reverse, (newData) => {
+    console.log(userInput.reverse)
+    store.update_reverse(pair, newData)
+  });  
+
 </script>
 
 <template>

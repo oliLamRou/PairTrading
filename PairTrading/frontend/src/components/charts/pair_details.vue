@@ -57,56 +57,101 @@
     await fetch_market_data();
   });
 
-  const getPairPrice = (ticker) => {
-    const hedge_ratio = store.pairs[pair.value]?.hedge_ratio
+  const getPairPrice = () => {
+    const hedge_ratio = store.pairs[pair.value]?.hedge_ratio;
+    const reverse = store.pairs[pair.value]?.reverse;
     if (!data.value || !data.value.length) return [];
+    const result = Object.values(
+      data.value.reduce((acc, { date, close, open, high, low, ticker }) => {
+      if (!acc[date]) {
+        acc[date] = { date, closeA: null, closeB: null };
+      }
 
-    const resultA = data.value.filter(item => item.ticker === A.value).map(
+      if (ticker === A.value) {
+        acc[date].openA = open;
+        acc[date].highA = high;
+        acc[date].lowA = low;
+        acc[date].closeA = close;
+      } else if (ticker === B.value) {
+        acc[date].openB = open;
+        acc[date].highB = high;
+        acc[date].lowB = low;
+        acc[date].closeB = close;
+      }
+
+      if (acc[date].closeA !== null && acc[date].closeB !== null) {
+        if (reverse) {
+          acc[date].open = (acc[date].openB - acc[date].openA) * hedge_ratio;
+          acc[date].high = (acc[date].highB - acc[date].highA) * hedge_ratio;
+          acc[date].low = (acc[date].lowB - acc[date].lowA) * hedge_ratio;
+          acc[date].close = (acc[date].closeB - acc[date].closeA) * hedge_ratio;
+        } else {
+          acc[date].open = (acc[date].openA - acc[date].openB) * hedge_ratio;
+          acc[date].high = (acc[date].highA - acc[date].highB) * hedge_ratio;
+          acc[date].low = (acc[date].lowA - acc[date].lowB) * hedge_ratio;
+          acc[date].close = (acc[date].closeA - acc[date].closeB) * hedge_ratio;
+        }
+      }
+
+      return acc;
+      }, {})
+    ).map(
       item => ({
         time: item.date / 1000,
-        value: item.close * hedge_ratio,
-        open: item.open * hedge_ratio,
-        high: item.high * hedge_ratio,
-        low: item.low * hedge_ratio,
-        close: item.close * hedge_ratio,
-        volume: item.volume
+        value: item.close,
+        open: item.open,
+        high: item.high,
+        low: item.low,
+        close: item.close,
       })
     );
-
-    const resultB = data.value.filter(item => item.ticker === B.value).map(
-      item => ({
-        time: item.date / 1000,
-        value: item.close * hedge_ratio,
-        open: item.open * hedge_ratio,
-        high: item.high * hedge_ratio,
-        low: item.low * hedge_ratio,
-        close: item.close * hedge_ratio,
-        volume: item.volume
-      })
-    );
-    return resultA;
+    return result;
   };
 
-  function test() {
-    const hedge_ratio = store.pairs[pair.value]?.hedge_ratio
+  const getRatio = () => {
+    const hedge_ratio = store.pairs[pair.value]?.hedge_ratio;
+    const reverse = store.pairs[pair.value]?.reverse;
     if (!data.value || !data.value.length) return [];
-    const result = Map.groupBy(data.value, date => ({
-      time: date,
-      close: date[0].close - date[1].close
-    }));
-    console.log(result)
-  }
+    const result = Object.values(
+      data.value.reduce((acc, { date, close, ticker }) => {
+      if (!acc[date]) {
+        acc[date] = { date, closeA: null, closeB: null };
+      }
+
+      if (ticker === A.value) {
+        acc[date].closeA = close;
+      } else if (ticker === B.value) {
+        acc[date].closeB = close;
+      }
+
+      if (acc[date].closeA !== null && acc[date].closeB !== null) {
+        if (reverse) {
+          acc[date].close = acc[date].closeB / acc[date].closeA;
+        } else {
+          acc[date].close = acc[date].closeA / acc[date].closeB;
+        }
+      }
+
+      return acc;
+      }, {})
+    ).map(
+      item => ({
+        time: item.date / 1000,
+        value: item.close,
+      })
+    );
+    return result;
+  };  
 
 </script>
 
 <template>
   <div>
-    <button @click="test">test</button>
     <div class="row">
       <div class="col">
         <div class="card">
           <!-- Candle -->
-          <!-- <LWChart :A="getPairPrice(A)" :type="'candle'"/> -->
+          <LWChart :A="getPairPrice()" :type="'candle'"/>
         </div>
       </div>
     </div>
@@ -114,13 +159,13 @@
       <div class="col">
         <div class="card">
           <!-- Compare -->
-          <!-- <LWChart :A="getTicker(A)" :B="getTicker(B)"/>                -->
+          <LWChart :A="getTicker(A)" :B="getTicker(B)"/>               
         </div>
       </div>
       <div class="col">
         <div class="card">
           <!-- Single -->
-          <!-- <LWChart :A="getTicker(A)" :type="'single'"/>  -->
+          <LWChart :A="getRatio()" :type="'single'"/> 
         </div>
       </div>
     </div>
