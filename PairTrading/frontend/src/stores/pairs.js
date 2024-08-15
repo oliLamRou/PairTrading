@@ -28,6 +28,9 @@ export const usePairForm = defineStore('pairForm',{
     update_hedge_ratio(pair, hedge_ratio) {
       this.pairs[pair.value].hedge_ratio = hedge_ratio
     },
+    update_reverse(pair, reverse) {
+      this.pairs[pair.value].reverse = reverse
+    },    
     async fetchPairInfo(A, B) {
       try {
         const response = await axios.get('http://localhost:5002/get_pair_info', {
