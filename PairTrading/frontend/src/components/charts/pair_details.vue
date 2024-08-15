@@ -87,15 +87,26 @@
     return resultA;
   };
 
+  function test() {
+    const hedge_ratio = store.pairs[pair.value]?.hedge_ratio
+    if (!data.value || !data.value.length) return [];
+    const result = Map.groupBy(data.value, date => ({
+      time: date,
+      close: date[0].close - date[1].close
+    }));
+    console.log(result)
+  }
+
 </script>
 
 <template>
   <div>
+    <button @click="test">test</button>
     <div class="row">
       <div class="col">
         <div class="card">
           <!-- Candle -->
-          <LWChart :A="getPairPrice(A)" :type="'candle'"/>
+          <!-- <LWChart :A="getPairPrice(A)" :type="'candle'"/> -->
         </div>
       </div>
     </div>
@@ -103,13 +114,13 @@
       <div class="col">
         <div class="card">
           <!-- Compare -->
-          <LWChart :A="getTicker(A)" :B="getTicker(B)"/>               
+          <!-- <LWChart :A="getTicker(A)" :B="getTicker(B)"/>                -->
         </div>
       </div>
       <div class="col">
         <div class="card">
           <!-- Single -->
-          <LWChart :A="getTicker(A)" :type="'single'"/> 
+          <!-- <LWChart :A="getTicker(A)" :type="'single'"/>  -->
         </div>
       </div>
     </div>
