@@ -1,40 +1,51 @@
 import { defineStore } from "pinia";
+import { useRoute } from 'vue-router'
 import axios from 'axios';
 import qs from 'qs';
 
 export const usePairForm = defineStore('pairForm',{
   state:()=>({
+    route: useRoute(),
     pairs:{},
   }),
+  getters: {
+    pair() { return this.route.params.pair },
+    A() { return this.pair.split('__')[0] },      
+    B() { return this.pair.split('__')[1] },
+  },
   actions:{
-    async load(pair){
-    	  this.pairs[pair] = {};
-        this.pairs[pair].A = pair.split('__')[0]
-        this.pairs[pair].B = pair.split('__')[1]
+    async fetch_market_data(){
+      try {
+        const response = await axios.get('http://localhost:5002/get_market_data', {
+          params: { tickers: [this.A,this.B] },
+          paramsSerializer: params => {
+            return qs.stringify(params, { arrayFormat: 'repeat' });
+          }
+        });
+        this.pairs[this.pair].data = response.data;
+      } catch (error) {
+        console.log(error);
+      }
+    },
 
-        const data = await this.fetchPairInfo(this.pairs[pair].A, this.pairs[pair].B);
-        console.log("DATA")
-        this.pairs[pair].reverse = Boolean(data.reverse)
-        this.pairs[pair].watchlist = Boolean(data.watchlist)
-        this.pairs[pair].hedge_ratio = data.hedge_ratio
-        this.pairs[pair].notes = data.notes
+    async load(){
+    	  this.pairs[this.pair] = {A: this.A, B: this.B};
+        const data = await this.fetchPairInfo(this.pairs[this.pair].A, this.pairs[this.pair].B);
+        this.pairs[this.pair] = {
+          A:            data.A ? data.A : this.A,
+          B:            data.B ? data.B : this.B,
+          watchlist:    data.watchlist ? data.watchlist !== null : false,
+          reverse:      data.reverse ? data.reverse !== null : false,
+          hedge_ratio:  data.hedge_ratio ? data.hedge_ratio !== null : 1,
+          notes:  data.notes,
+        }
+
+        this.fetch_market_data()
 	  },
-  	get_hedge_ratio(pair){
-				return this.pairs[pair]?.hedge_ratio ?? 1
-  	},
-    set_hedge_ratio(pair, hedge_ratio){
-        return this.pairs[pair].hedge_ratio = hedge_ratio
-    },
-    update_hedge_ratio(pair, hedge_ratio) {
-      this.pairs[pair.value].hedge_ratio = hedge_ratio
-    },
-    update_reverse(pair, reverse) {
-      this.pairs[pair.value].reverse = reverse
-    },    
     async fetchPairInfo(A, B) {
       try {
         const response = await axios.get('http://localhost:5002/get_pair_info', {
-          params: { tickers: [A, B] },
+          params: { tickers: this.pair.split('__') },
           paramsSerializer: params => {
             return qs.stringify(params, { arrayFormat: 'repeat' });
           }
@@ -43,6 +54,12 @@ export const usePairForm = defineStore('pairForm',{
       } catch (error) {
         console.log(error);
       }
-    }
+    },
+    update_hedge_ratio(hedge_ratio) {
+      this.pairs[this.pair].hedge_ratio = hedge_ratio
+    },
+    update_reverse(reverse) {
+      this.pairs[this.pair].reverse = reverse
+    },
   }
 })
