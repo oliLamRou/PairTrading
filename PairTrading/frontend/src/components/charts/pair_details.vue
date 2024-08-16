@@ -1,65 +1,27 @@
 <script setup>
   import { ref, watch, onMounted, computed } from 'vue';
-  import { useRoute } from 'vue-router'
-  import axios from 'axios';
-  import LWChart from '@/components/charts/LWChart.vue';
-  import qs from 'qs';
   import { usePairForm } from '@/stores/pairs';
-
-  const route = useRoute();
+  import LWChart from '@/components/charts/LWChart.vue';
+  
   const store = usePairForm();
+  const data = computed(() => store.pairs[store.pair].data);
 
-  const data = ref(null);
+  const getClose = (ticker) => {
+    if (!data.value || !data.value) return [];
 
-  const pair = computed( () => {
-    return route.params.pair;
-  });
-
-  const A = computed( () => {
-    return pair.value.split('__')[0];
-  });
-
-  const B = computed( () => {
-    return pair.value.split('__')[1];
-  });  
-
-  const fetch_market_data = async () => {
-    try {
-      const response = await axios.get('http://localhost:5002/get_market_data', {
-        params: { tickers: [A.value,B.value] },
-        paramsSerializer: params => {
-          return qs.stringify(params, { arrayFormat: 'repeat' });
-        }
-      });
-      data.value = response.data;
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const getTicker = (ticker) => {
-    if (!data.value || !data.value.length) return [];
     const result = data.value.filter(item => item.ticker === ticker).map(
       item => ({
         time: item.date / 1000,
         value: item.close,
-        open: item.open,
-        high: item.high,
-        low: item.low,
-        close: item.close,
         volume: item.volume
       })
     );
     return result;
   };
 
-  onMounted( async () => {
-    await fetch_market_data();
-  });
-
   const getPairPrice = () => {
-    const hedge_ratio = store.pairs[pair.value]?.hedge_ratio;
-    const reverse = store.pairs[pair.value]?.reverse;
+    const hedge_ratio = store.pairs[store.pair]?.hedge_ratio;
+    const reverse = store.pairs[store.pair]?.reverse;
     if (!data.value || !data.value.length) return [];
     const result = Object.values(
       data.value.reduce((acc, { date, close, open, high, low, ticker }) => {
@@ -67,12 +29,12 @@
         acc[date] = { date, closeA: null, closeB: null };
       }
 
-      if (ticker === A.value) {
+      if (ticker === store.A) {
         acc[date].openA = open;
         acc[date].highA = high;
         acc[date].lowA = low;
         acc[date].closeA = close;
-      } else if (ticker === B.value) {
+      } else if (ticker === store.B) {
         acc[date].openB = open;
         acc[date].highB = high;
         acc[date].lowB = low;
@@ -81,15 +43,15 @@
 
       if (acc[date].closeA !== null && acc[date].closeB !== null) {
         if (reverse) {
-          acc[date].open = (acc[date].openB - acc[date].openA) * hedge_ratio;
-          acc[date].high = (acc[date].highB - acc[date].highA) * hedge_ratio;
-          acc[date].low = (acc[date].lowB - acc[date].lowA) * hedge_ratio;
-          acc[date].close = (acc[date].closeB - acc[date].closeA) * hedge_ratio;
+          acc[date].open = acc[date].openB - (acc[date].openA * hedge_ratio);
+          acc[date].high = acc[date].highB - (acc[date].highA * hedge_ratio);
+          acc[date].low = acc[date].lowB - (acc[date].lowA * hedge_ratio);
+          acc[date].close = acc[date].closeB - (acc[date].closeA * hedge_ratio);
         } else {
-          acc[date].open = (acc[date].openA - acc[date].openB) * hedge_ratio;
-          acc[date].high = (acc[date].highA - acc[date].highB) * hedge_ratio;
-          acc[date].low = (acc[date].lowA - acc[date].lowB) * hedge_ratio;
-          acc[date].close = (acc[date].closeA - acc[date].closeB) * hedge_ratio;
+          acc[date].open = acc[date].openA - (acc[date].openB * hedge_ratio);
+          acc[date].high = acc[date].highA - (acc[date].highB * hedge_ratio);
+          acc[date].low = acc[date].lowA - (acc[date].lowB * hedge_ratio);
+          acc[date].close = acc[date].closeA - (acc[date].closeB * hedge_ratio);
         }
       }
 
@@ -109,27 +71,25 @@
   };
 
   const getRatio = () => {
-    const hedge_ratio = store.pairs[pair.value]?.hedge_ratio;
-    const reverse = store.pairs[pair.value]?.reverse;
+    const hedge_ratio = store.pairs[store.pair]?.hedge_ratio;
+    const reverse = store.pairs[store.pair]?.reverse;
     if (!data.value || !data.value.length) return [];
+    
+
     const result = Object.values(
       data.value.reduce((acc, { date, close, ticker }) => {
       if (!acc[date]) {
         acc[date] = { date, closeA: null, closeB: null };
       }
 
-      if (ticker === A.value) {
+      if (ticker === store.A) {
         acc[date].closeA = close;
-      } else if (ticker === B.value) {
+      } else if (ticker === store.B) {
         acc[date].closeB = close;
       }
 
       if (acc[date].closeA !== null && acc[date].closeB !== null) {
-        if (reverse) {
-          acc[date].close = acc[date].closeB / acc[date].closeA;
-        } else {
-          acc[date].close = acc[date].closeA / acc[date].closeB;
-        }
+        acc[date].close = acc[date].closeA / acc[date].closeB;
       }
 
       return acc;
@@ -141,7 +101,7 @@
       })
     );
     return result;
-  };  
+  };
 
 </script>
 
@@ -159,7 +119,7 @@
       <div class="col">
         <div class="card">
           <!-- Compare -->
-          <LWChart :A="getTicker(A)" :B="getTicker(B)"/>               
+          <LWChart :A="getClose(store.A)" :B="getClose(store.B)"/>
         </div>
       </div>
       <div class="col">
