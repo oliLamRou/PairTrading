@@ -55,11 +55,27 @@ export const usePairForm = defineStore('pairForm',{
         console.log(error);
       }
     },
+
+    async save(){
+      try {
+        const response = await axios.post('http://localhost:5002/update_pair_info', {
+          tickers: this.pair.split('__'),
+          pairInfo: this.pairs[this.pair]
+        });
+        console.log('updated', response.data)
+      } catch (error) {
+        console.log(error);
+      }
+    },
+
     update_hedge_ratio(hedge_ratio) {
       this.pairs[this.pair].hedge_ratio = hedge_ratio
     },
     update_reverse(reverse) {
       this.pairs[this.pair].reverse = reverse
     },
+    save() {
+
+    }
   }
 })

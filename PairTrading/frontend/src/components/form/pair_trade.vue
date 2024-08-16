@@ -56,6 +56,10 @@
     return Math.round(avg_vol)
   });
 
+  const save = () => {
+    store.save()
+  }
+
   watch(() => userInput.hedge_ratio, (newData) => {
     store.update_hedge_ratio(newData)
   });
@@ -92,6 +96,6 @@
       <span class="input-group-text" id="inputGroup-sizing-sm">Notes</span>
       <textarea class="form-control" id="exampleFormControlTextarea1" rows="2" v-model.string="userInput.notes" placeholder="Take note here"></textarea>
     </div>
-    <!-- <button type="button" class="btn btn-primary mt-3" @click="save()">Save</button> -->
+    <button type="button" class="btn btn-primary mt-3" @click="save()">Save</button>
   </form>
 </template>
