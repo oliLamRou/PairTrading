@@ -57,8 +57,13 @@
   });
 
   const save = () => {
+    store.update_notes(userInput.notes)
     store.save()
   }
+
+  watch(() => userInput.watchlist, (newData) => {
+    store.update_watchlist(newData)
+  });
 
   watch(() => userInput.hedge_ratio, (newData) => {
     store.update_hedge_ratio(newData)

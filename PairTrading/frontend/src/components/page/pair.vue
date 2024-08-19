@@ -27,25 +27,13 @@
     </div>
     <div class="card-body" v-if="isDataLoaded">
       <div class="row">
-        <div class="col chart_col">
+        <div class="col-md-9">
           <pair_details/>
         </div>
-        <div class="col trade_col">
+        <div class="col-md-3">
           <pair_trade/>
         </div>    
       </div>
     </div>
   </div>
 </template>
-
-<style>
-  .compare_page {
-    min-width: 1902px;
-  }
-  .trade_col {
-    max-width: 30%;
-  }
-  .chart_col {
-    max-width: 70%;
-  }
-</style>

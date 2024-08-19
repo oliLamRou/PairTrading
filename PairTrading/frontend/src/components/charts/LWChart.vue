@@ -1,9 +1,10 @@
 <script setup>
-  import { ref, onMounted, onUnmounted, watch, defineProps, computed, reactive } from 'vue';
+  import { ref, onMounted, onUnmounted, watch, computed, reactive } from 'vue';
   import { Indicators, IndicatorStyle } from '@/utils/indicators.js'
-
+  import { usePairForm } from '@/stores/pairs';
   import { createChart, LineStyle, LineType, CrosshairMode} from 'lightweight-charts';
 
+  const store = usePairForm();
   const props = defineProps({
     A: {
       type: Array,
@@ -15,7 +16,7 @@
     type: {
       type: String,
       default: 'line',
-    },
+    }
   });
 
   let chart;
@@ -35,8 +36,8 @@
     scale: 1,
     offset: 0,
     bollingerBands: true,
-    bb_period: 20,
-    bb_std_dev: 2,
+    bb_period: store.pairs[store.pair]?.period,
+    bb_std_dev: store.pairs[store.pair]?.std_dev,
   });
 
   const resizeHandler = () => {
@@ -84,7 +85,6 @@
       }
     }
     
-    
     seriesA.setData(props.A);
     if (seriesB) {
       seriesB.setData(props.B);
@@ -101,6 +101,8 @@
           seriesA.setData(computed_A.value)
           if (props.type === 'candle') {
             bollinger_bands()
+            store.update_period(newData[1].bb_period)
+            store.update_std_dev(newData[1].bb_std_dev)
           }
       };
       if (seriesB) {
@@ -109,7 +111,6 @@
     },
     { deep: true }
   );
-  
 
   const computed_A = computed( ()=> {
     if (userInput.normalize) {
@@ -167,6 +168,20 @@
     });
   }
 
+  const bollinger_bands = () => {
+    //process
+    const bbands = Indicators.LW_BollingerBands({
+      period: userInput.bb_period, 
+      values: computed_A.value, 
+      stdDev: userInput.bb_std_dev
+    })
+
+    //set
+    bbUpper.setData(bbands.upper)
+    bbMiddle.setData(bbands.middle)
+    bbLower.setData(bbands.lower)
+  }  
+
   const addSMA = () => {
     const sma = Indicators.LW_SMA({period: 30, values: computed_A.value})
     let smaA = chart.addLineSeries(IndicatorStyle.SMA);
@@ -183,20 +198,6 @@
     const volData = Indicators.LW_Volume({values: computed_A.value})
     let vol = chart.addHistogramSeries();
     vol.setData(volData)
-  }
-
-  const bollinger_bands = () => {
-    //process
-    const bbands = Indicators.LW_BollingerBands({
-      period: userInput.bb_period, 
-      values: computed_A.value, 
-      stdDev: userInput.bb_std_dev
-    })
-
-    //set
-    bbUpper.setData(bbands.upper)
-    bbMiddle.setData(bbands.middle)
-    bbLower.setData(bbands.lower)
   }
 
   const addTripleEMA = () => {
@@ -239,16 +240,11 @@
   <!-- Candle -->
   <div class="input-group input-group-sm mb-1 options" v-if="props.type === 'candle'">
     <!-- BB -->
-    <button 
-      :class="userInput.bollingerBands ? 'btn btn-success' : 'btn btn-outline-secondary'" 
-      type="button" 
-      id="button-addon1" 
-      @click="bollinger_bands_visibility"
-    >Bollinger Bands</button>
+    <button :class="userInput.bollingerBands ? 'btn btn-success' : 'btn btn-outline-secondary'" type="button" id="button-addon1" @click="bollinger_bands_visibility">Bollinger Bands</button>
 
     <!-- Period -->
-      <span class="input-group-text" id="inputGroup-sizing-sm">Period</span>
-      <input type="number" class="form-control pl-5" step="1" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-sm" v-model="userInput.bb_period">
+    <span class="input-group-text" id="inputGroup-sizing-sm">Period</span>
+    <input type="number" class="form-control pl-5" step="1" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-sm" v-model="userInput.bb_period">
 
     <!-- Standard Deviation -->
     <div class="form-check">
