@@ -38,6 +38,7 @@ def get_pairs():
     if industry:
         s.industry = industry
         df = s.get_pairs()
+        print('BACKEND', df)
         return df.to_json(orient='records')
 
     return {}
@@ -66,12 +67,11 @@ def pair_info():
 
 @app.route('/update_pair_info', methods=['POST'])
 def update_pair_info():
-    tickers = request.json.get('tickers')
     pairInfo = request.json.get('pairInfo')
-    if not tickers:
+    if not pairInfo:
         return {}
 
-    df = s.update_pair_info(tickers, pairInfo)
+    df = s.update_pair_info(pairInfo)
     return df.to_json()    
     
 @app.route('/get_watchlist', methods=['GET'])

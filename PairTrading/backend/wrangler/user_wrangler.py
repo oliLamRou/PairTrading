@@ -37,20 +37,22 @@ class UserWrangler(DataBase):
         pair = self.get_tickers_in_allcap(pair)
         return self.get_pair_info(pair).fillna(0)['watchlist']
 
-    def format_pair_info_dict(self, tickers: list, pair_info: dict) -> dict:
+    def format_pair_info_dict(self, tickers, pair_info: dict) -> dict:
         tickers = self.get_tickers_in_allcap(tickers)
         tickers.sort()
+
         pair_info = pair_info.copy()
         pair_info['A'] = tickers[0]
         pair_info['B'] = tickers[1]
         pair_info['pair'] = '__'.join(tickers)
         return pair_info
 
-    def update_pair_info(self, tickers: list, pair_info: dict) -> pd.Series():
+    def update_pair_info(self, pair_info: dict) -> pd.Series():
+        tickers = [pair_info.get('A'), pair_info.get('B')]
         self.is_good_pair(tickers)
 
         pair_info = self.format_pair_info_dict(tickers, pair_info)
-        print('dict', pair_info)
+        del pair_info['data']
 
         if self.__user_db.has_value(_db_constant.PAIR_INFO_TABLE_NAME, 'pair', pair_info['pair']):
             self.__user_db.update_row(_db_constant.PAIR_INFO_TABLE_NAME, pair_info, 'pair', pair_info['pair'])
@@ -82,4 +84,11 @@ class UserWrangler(DataBase):
 
 if __name__ == '__main__':
     uw = UserWrangler()
-    print(uw.get_pair_info(['ARKK', 'ARKG']))
+    pair = ['OII', 'RNGR']
+#     uw.update_pair_info(pair, {
+#     'reverse': True,  
+#     'watchlist': True,
+#     'hedge_ratio': 99,
+#     'notes': 'placeholder'
+# })
+    print(uw.get_pair_info(pair))

@@ -1,6 +1,6 @@
 {
   "name": "pair_trading",
-  "version": "0.0.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,6 +17,7 @@
     "bootstrap": "^5.3.3",
     "concurrently": "^8.2.2",
     "lightweight-charts": "^4.2.0",
+    "pinia": "^2.2.1",
     "qs": "^6.13.0",
     "technicalindicators": "^3.1.0",
     "vue": "^3.4.29",

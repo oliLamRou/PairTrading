@@ -35,7 +35,9 @@ PAIR_INFO_COLUMNS = {
     'notes': ['notes', 'TEXT'],
     'rating' : ['rating', 'INTEGER'],
     'trades' : ['trades', 'TEXT'], 
-    'position' : ['position', 'INTEGER']
+    'position' : ['position', 'INTEGER'],
+    'period': ['period', 'INTERGER'],
+    'std_dev': ['std_dev', 'INTERGER'],
 }
 
 TICKER_RANK_COLUMNS = {

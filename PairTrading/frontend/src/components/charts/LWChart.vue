@@ -1,9 +1,10 @@
 <script setup>
-  import { ref, onMounted, onUnmounted, watch, defineProps, computed, reactive } from 'vue';
+  import { ref, onMounted, onUnmounted, watch, computed, reactive } from 'vue';
   import { Indicators, IndicatorStyle } from '@/utils/indicators.js'
-
+  import { usePairForm } from '@/stores/pairs';
   import { createChart, LineStyle, LineType, CrosshairMode} from 'lightweight-charts';
 
+  const store = usePairForm();
   const props = defineProps({
     A: {
       type: Array,
@@ -15,18 +16,28 @@
     type: {
       type: String,
       default: 'line',
-    },
+    }
   });
 
   let chart;
   let seriesA;
   let seriesB;
-  let BBUL;
+
+  //indicator
+  //bb
+  let bbUpper;
+  let bbMiddle;
+  let bbLower;
+
   const chartContainer = ref();
+
   const userInput = reactive({
     normalize: false,
     scale: 1,
     offset: 0,
+    bollingerBands: true,
+    bb_period: store.pairs[store.pair]?.period,
+    bb_std_dev: store.pairs[store.pair]?.std_dev,
   });
 
   const resizeHandler = () => {
@@ -50,7 +61,7 @@
   });  
 
   onMounted(() => {
-    chart = createChart(chartContainer.value, { width: 400, height: 400});
+    chart = createChart(chartContainer.value, { width: 400, height: 350});
     chart.applyOptions({
       crosshair: {
         mode: CrosshairMode.Normal, // Keep crosshair in normal mode
@@ -59,11 +70,13 @@
     
     if (props.type === 'candle') {
       seriesA = chart.addCandlestickSeries()
-      //addSMA()
-      // addBB()
-       //addVWAP();
-      // addTripleEMA();
-      //addVolume();
+
+      //line and style
+      bbUpper = chart.addLineSeries(IndicatorStyle.BollingerBands.upper);
+      bbLower = chart.addLineSeries(IndicatorStyle.BollingerBands.lower);
+      bbMiddle = chart.addLineSeries(IndicatorStyle.BollingerBands.middle);
+
+
     } else {
       seriesA = chart.addLineSeries();
       if (props.B) {
@@ -71,7 +84,6 @@
         
       }
     }
-    
     
     seriesA.setData(props.A);
     if (seriesB) {
@@ -87,11 +99,11 @@
     newData => {
       if (seriesA) {
           seriesA.setData(computed_A.value)
-          //addSMA() 
-          // addBB()
-          //addVWAP();
-          // addTripleEMA();
-          //addVolume();
+          if (props.type === 'candle') {
+            bollinger_bands()
+            store.update_period(newData[1].bb_period)
+            store.update_std_dev(newData[1].bb_std_dev)
+          }
       };
       if (seriesB) {
           seriesB.setData(computed_B.value);
@@ -99,7 +111,6 @@
     },
     { deep: true }
   );
-  
 
   const computed_A = computed( ()=> {
     if (userInput.normalize) {
@@ -144,6 +155,33 @@
     userInput.normalize = !userInput.normalize
   }
 
+  function bollinger_bands_visibility() {
+    userInput.bollingerBands = !userInput.bollingerBands
+    bbUpper.applyOptions({
+        visible: userInput.bollingerBands,
+    });
+    bbMiddle.applyOptions({
+        visible: userInput.bollingerBands,
+    });
+    bbLower.applyOptions({
+        visible: userInput.bollingerBands,
+    });
+  }
+
+  const bollinger_bands = () => {
+    //process
+    const bbands = Indicators.LW_BollingerBands({
+      period: userInput.bb_period, 
+      values: computed_A.value, 
+      stdDev: userInput.bb_std_dev
+    })
+
+    //set
+    bbUpper.setData(bbands.upper)
+    bbMiddle.setData(bbands.middle)
+    bbLower.setData(bbands.lower)
+  }  
+
   const addSMA = () => {
     const sma = Indicators.LW_SMA({period: 30, values: computed_A.value})
     let smaA = chart.addLineSeries(IndicatorStyle.SMA);
@@ -160,17 +198,6 @@
     const volData = Indicators.LW_Volume({values: computed_A.value})
     let vol = chart.addHistogramSeries();
     vol.setData(volData)
-  }
-
-  const addBB = () => {
-    const bbands = Indicators.LW_BollingerBands({period: 18, values: computed_A.value, stdDev: 2})
-    let bbUpper = chart.addLineSeries(IndicatorStyle.BollingerBands.upper);
-    let bbLower = chart.addLineSeries(IndicatorStyle.BollingerBands.lower);
-    let bbMiddle = chart.addLineSeries(IndicatorStyle.BollingerBands.middle);
-    
-    bbUpper.setData(bbands.upper)
-    bbMiddle.setData(bbands.middle)
-    bbLower.setData(bbands.lower)
   }
 
   const addTripleEMA = () => {
@@ -192,7 +219,7 @@
   <hr/>
   
   <!-- Line -->
-  <div class="input-group input-group-sm mb-3 options" v-if="props.type === 'line'">
+  <div class="input-group input-group-sm mb-1 options" v-if="props.type === 'line'">
     <!-- Normalize -->
     <button 
       :class="userInput.normalize ? 'btn btn-success' : 'btn btn-outline-secondary'" 
@@ -210,13 +237,25 @@
     <input type="number" class="form-control" step="0.1" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-sm" value=0 v-model="userInput.offset" :disabled="userInput.normalize">
   </div>
 
-  <!-- Candle or Single -->
-  <div class="input-group input-group-sm mb-3 options" v-if="props.type === 'candle' || props.type === 'single'">
+  <!-- Candle -->
+  <div class="input-group input-group-sm mb-1 options" v-if="props.type === 'candle'">
     <!-- BB -->
-    <div class="form-check form-switch">
-      <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault">
-      <label class="form-check-label" for="flexSwitchCheckDefault">Bollinger Bands</label>
-    </div>
+    <button :class="userInput.bollingerBands ? 'btn btn-success' : 'btn btn-outline-secondary'" type="button" id="button-addon1" @click="bollinger_bands_visibility">Bollinger Bands</button>
+
+    <!-- Period -->
+    <span class="input-group-text" id="inputGroup-sizing-sm">Period</span>
+    <input type="number" class="form-control pl-5" step="1" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-sm" v-model="userInput.bb_period">
+
+    <!-- Standard Deviation -->
+    <div class="form-check">
+      <label class="mx-1">Std. Dev.:</label>
+      <label class="mx-2" for="one">1</label>
+      <input type="radio" id="one" value=1 v-model="userInput.bb_std_dev"/>
+      <label class="mx-2" for="two">2</label>
+      <input type="radio" id="two" value=2 v-model="userInput.bb_std_dev"/>
+      <label class="mx-2" for="two">3</label>
+      <input type="radio" id="two" value=3 v-model="userInput.bb_std_dev"/>
+    </div>    
   </div>  
 </template>
 
