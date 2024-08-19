@@ -24,6 +24,7 @@ WATCHLIST_COLUMNS = {
     'watchlist': ['watchlist', 'TEXT'],
     'notes': ['notes', 'TEXT']
 }
+
 PAIR_INFO_COLUMNS = {
     'pair': ['pair', 'TEXT'],
     'A': ['A', 'TEXT'],
@@ -31,7 +32,10 @@ PAIR_INFO_COLUMNS = {
     'reverse': ['reverse', 'INTERGER'],  
     'watchlist': ['watchlist', 'INTERGER'],
     'hedge_ratio': ['hedge_ratio', 'REAL'],
-    'notes': ['notes', 'TEXT']
+    'notes': ['notes', 'TEXT'],
+    'rating' : ['rating', 'INTEGER'],
+    'trades' : ['trades', 'TEXT'], 
+    'position' : ['position', 'INTEGER']
 }
 
 TICKER_RANK_COLUMNS = {

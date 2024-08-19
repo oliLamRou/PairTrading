@@ -3,11 +3,13 @@ from flask import Flask, request
 from flask_cors import CORS
 
 from PairTrading.backend.scanner import Scanner
+from PairTrading.backend.data_wrangler import DataWrangler
 
 app = Flask(__name__)
 CORS(app)
 
 s = Scanner()
+dw = DataWrangler()
 
 @app.route('/get_potential_pair', methods=['GET'])
 def get_potential_pair():
@@ -72,4 +74,9 @@ def update_pair_info():
     df = s.update_pair_info(tickers, pairInfo)
     return df.to_json()    
     
+@app.route('/get_watchlist', methods=['GET'])
+def get_watchlist():
+    df = dw.get_pairs_in_watchlist('watchlist')
+    return df.to_json(orient='records')
+
 app.run(debug=True, port=5002)

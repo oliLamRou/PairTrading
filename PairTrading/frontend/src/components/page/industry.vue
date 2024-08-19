@@ -25,6 +25,7 @@
     try {
       const response = await axios.get('http://localhost:5002/get_potential_pair');
       industries.value = response.data;
+      console.log('industries: ', response.data)
     } catch (error) {
       console.error(error);
     }
@@ -94,7 +95,7 @@
 
   const colDefs = ref([
     { field: "industry", flex: 1 },
-    { field: "potential_pair", flex: 1 },
+    { headerName: "Potential Pairs", field: "potential_pair", flex: 1 },
   ]);
 
 </script>

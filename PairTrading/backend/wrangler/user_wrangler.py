@@ -30,7 +30,7 @@ class UserWrangler(DataBase):
 
     def get_pairs_in_watchlist(self, watchlist: str) -> pd.DataFrame():
         #return all rows with 1 in watchlist col
-        return self.__user_db.get_rows(_db_constant.PAIR_INFO_TABLE_NAME, 'watchlist', 1)
+        return self.__user_db.get_rows(_db_constant.PAIR_INFO_TABLE_NAME, 'watchlist', str(1))
 
     def is_watchlist(pair: list) -> bool:
         #return watchlist value
