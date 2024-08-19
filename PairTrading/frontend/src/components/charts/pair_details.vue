@@ -116,13 +116,13 @@
       </div>
     </div>
     <div class="row">
-      <div class="col">
+      <div class="col-md-6">
         <div class="card">
           <!-- Compare -->
           <LWChart :A="getClose(store.A)" :B="getClose(store.B)"/>
         </div>
       </div>
-      <div class="col">
+      <div class="col-md-6">
         <div class="card">
           <!-- Single -->
           <LWChart :A="getRatio()" :type="'single'"/> 
@@ -131,3 +131,9 @@
     </div>
   </div>
 </template>
+
+<style>
+  .chart-row {
+    min-width: 1000px;
+  }
+</style>

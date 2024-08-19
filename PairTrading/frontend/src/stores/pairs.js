@@ -32,14 +32,15 @@ export const usePairForm = defineStore('pairForm',{
     	  this.pairs[this.pair] = {A: this.A, B: this.B};
         const data = await this.fetchPairInfo(this.pairs[this.pair].A, this.pairs[this.pair].B);
         this.pairs[this.pair] = {
-          A:            data.A ? data.A : this.A,
-          B:            data.B ? data.B : this.B,
-          watchlist:    data.watchlist ? data.watchlist !== null : false,
-          reverse:      data.reverse ? data.reverse !== null : false,
-          hedge_ratio:  data.hedge_ratio ? data.hedge_ratio !== null : 1,
-          notes:  data.notes,
+          A:            data.A            ? data.A                    : this.A,
+          B:            data.B            ? data.B                    : this.B,
+          watchlist:    data.watchlist    ? data.watchlist !== null   : false,
+          reverse:      data.reverse      ? data.reverse !== null     : false,
+          hedge_ratio:  data.hedge_ratio  ? data.hedge_ratio          : 1,
+          notes:        data.notes,
+          period:       data.period       ? data.period               : 20,
+          std_dev:      data.std_dev      ? data.std_dev              : 2,
         }
-
         this.fetch_market_data()
 	  },
     async fetchPairInfo(A, B) {
@@ -57,9 +58,9 @@ export const usePairForm = defineStore('pairForm',{
     },
 
     async save(){
+      console.log('HERE', this.pairs[this.pair])
       try {
         const response = await axios.post('http://localhost:5002/update_pair_info', {
-          tickers: this.pair.split('__'),
           pairInfo: this.pairs[this.pair]
         });
         console.log('updated', response.data)
@@ -74,8 +75,17 @@ export const usePairForm = defineStore('pairForm',{
     update_reverse(reverse) {
       this.pairs[this.pair].reverse = reverse
     },
-    save() {
-
-    }
+    update_watchlist(watchlist) {
+      this.pairs[this.pair].watchlist = watchlist
+    },    
+    update_notes(notes) {
+      this.pairs[this.pair].notes = notes
+    },    
+    update_period(period) {
+      this.pairs[this.pair].period = period
+    },
+    update_std_dev(std_dev) {
+      this.pairs[this.pair].std_dev = std_dev
+    },
   }
 })

@@ -31,6 +31,8 @@ PAIR_INFO_COLUMNS = {
     'reverse': ['reverse', 'INTERGER'],  
     'watchlist': ['watchlist', 'INTERGER'],
     'hedge_ratio': ['hedge_ratio', 'REAL'],
+    'period': ['period', 'INTERGER'],
+    'std_dev': ['std_dev', 'INTERGER'],
     'notes': ['notes', 'TEXT']
 }
 
