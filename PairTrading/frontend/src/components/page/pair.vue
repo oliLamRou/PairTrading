@@ -14,6 +14,7 @@
   })
 
   onMounted( async () => {
+    store.pair = pair;
     await store.load();
     isDataLoaded.value = true;
   })

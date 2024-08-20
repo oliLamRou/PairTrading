@@ -5,12 +5,11 @@ import qs from 'qs';
 
 export const usePairForm = defineStore('pairForm',{
   state:()=>({
-    route: useRoute(),
-    pairs:{},
+    pair: "F__F",
+    pairs:{}
   }),
   getters: {
-    pair() { return this.route.params.pair },
-    A() { return this.pair.split('__')[0] },      
+    A() { return this.pair.split('__')[0] },
     B() { return this.pair.split('__')[1] },
   },
   actions:{

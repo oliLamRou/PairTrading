@@ -1,8 +1,9 @@
 <script setup>
 	import {ref, reactive, onMounted } from 'vue';
 	import axios from 'axios'
-	import pair_trade from '@/components/form/pair_trade.vue';
+	//import pair_trade from '@/components/form/pair_trade.vue';
 	//import pair_details from '@/components/charts/pair_details.vue';
+	import pair_preview from '../charts/pair_preview.vue';
 	import { useRoute } from 'vue-router'
 
     //import { ref, onMounted, onBeforeMount, watch, reactive, computed } from 'vue'
@@ -12,9 +13,9 @@
     import { AgGridVue } from "ag-grid-vue3"; // Vue Data Grid Component
 
 	const route = useRoute();
-	const rowData = ref(null)
+	const rowData = ref(null);
 	const rowSelection = ref(null);
-	const watchlist = ref(null)
+	const selectedPair = ref(null);
 	
 	const colDefs = ref([
 		{ field: "pair", flex: 1 },
@@ -27,10 +28,7 @@
 	})
 
     const onRowClicked = (value) => {
-        if(!loading.value){
-        	selectedIndustry.value = value.data.industry
-        	loading.value = true;
-        }
+		selectedPair.value = value.data.pair
     }
 
 	const getWatchlist = async () => {
@@ -69,6 +67,16 @@
 			</div>
 		</div>
 	</div>
+	<div class="row">
+      <div class="row">
+        <div class="col-md-9">
+			<pair_preview :pairProp="selectedPair"/>
+        </div>
+        <div class="col-md-3">
+          <!-- <pair_trade/> -->
+        </div>    
+      </div>
+    </div>
 </template>
 
 <style>
