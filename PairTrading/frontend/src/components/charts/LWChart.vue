@@ -16,6 +16,10 @@
     type: {
       type: String,
       default: 'line',
+    },
+    watermark: {
+      type: String,
+      default: '',
     }
   });
 
@@ -88,6 +92,10 @@
     seriesA.setData(props.A);
     if (seriesB) {
       seriesB.setData(props.B);
+    }
+
+    if(props.watermark !== ""){
+      showWatermark()
     }
     
     window.addEventListener('resize', resizeHandler);
@@ -166,6 +174,19 @@
     bbLower.applyOptions({
         visible: userInput.bollingerBands,
     });
+  }
+
+  function showWatermark() {
+    chart.applyOptions({
+    watermark: {
+        visible: true,
+        fontSize: 40,
+        horzAlign: 'left',
+        vertAlign: 'top',
+        color: 'rgba(71, 71, 71, 0.4)',
+        text: props.watermark,
+    },
+});
   }
 
   const bollinger_bands = () => {

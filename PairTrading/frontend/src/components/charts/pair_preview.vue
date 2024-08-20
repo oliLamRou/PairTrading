@@ -93,7 +93,7 @@
       <div class="col">
         <div class="card">
           <!-- Candle -->
-          <LWChart :A="getPairPrice()" :type="'candle'" v-if="isDataLoaded"/>
+          <LWChart :A="getPairPrice()" :type="'candle'" :watermark="store.pair" v-if="isDataLoaded"/>
         </div>
       </div>
     </div>
