@@ -6,6 +6,7 @@ from PairTrading.backend.ibkr import IBClient
 from ibapi.client import Contract
 from threading import Thread
 import time
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -126,11 +127,11 @@ def ibkr_get_historical_data():
     contract.currency = "USD"
 
     # Request historical data
-    ib.reqHistoricalData(ib.next_id(), contract, "20240820 16:00:00 US/Eastern", "2 D", "1 min", "TRADES", 1, 1, False, [])
+    ib.reqHistoricalData(ib.next_id(), contract, "", "3600 S", "1 min", "TRADES", 1, 1, False, [])
 
     # Sleep while receiving live data
     time.sleep(0.7)
-    print(str(ib.historical_data))
+    #print(str(ib.historical_data))
     return ib.historical_data
     
 app.run(debug=True, port=5002)

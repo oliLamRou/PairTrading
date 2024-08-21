@@ -41,13 +41,12 @@ class IBClient(EWrapper, EClient):
             'volume': bar.volume
         }
         self.historical_data_buffer.append(data)
-        print('add bar')
 
     # callback when all historical data has been received
     def historicalDataEnd(self, req_id, start, end):
         self.historical_data = self.historical_data_buffer.copy()
         self.historical_data_buffer.clear()
-        print(self.historical_data)
+        #print(self.historical_data)
         print('end of historical data')
         print(f"end of data {start} {end}")
    

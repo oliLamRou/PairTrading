@@ -18,21 +18,12 @@ Testing
     import axios from 'axios'
 
     const backendData = ref();
-
     let interval
-    // const chartData = computed(() => {
-    //     return getHistoricalData();
-    // })
-
-    // onBeforeMount( async () => {
-    //     await connect();
-    // });
 
     const getTicker = () => {
         if (!backendData.value || !backendData.value.length) return [];
         const result = backendData.value.map(
         item => ({
-            //time: item.date / 1000,
             time: item.time,
             value: item.close,
             open: item.open,
@@ -49,7 +40,6 @@ Testing
     const testBackend = async () => {
         try {
             const response = await axios.get('http://localhost:5002/ibkr_connect');
-            //console.log(response.data)
             backendData.value = response.data
         } catch (error) {
         console.error(error);
@@ -96,7 +86,7 @@ Testing
         //await connect()
         //await getHistoricalData()
         //testBackend();
-        //startInterval()
+        startInterval()
     });
 
     onBeforeUnmount(async () => {
@@ -106,8 +96,8 @@ Testing
 
     function startInterval(){
         interval = setInterval(() => {
-            testBackend();
-        }, 2000)
+            getHistoricalData();
+        }, 10000)
     }
 
 
