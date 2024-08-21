@@ -11,7 +11,7 @@
 
   const fetchData = async () => {
     try {
-      const response = await axios.get('http://localhost:5002/get_df', {
+      const response = await axios.get('http://localhost:5002/get_market_data', {
         params: { tickers: pair.value },
         paramsSerializer: params => {
           return qs.stringify(params, { arrayFormat: 'repeat' });
@@ -25,6 +25,7 @@
 
   const getTicker = (ticker) => {
     if (!data.value || !data.value.length) return [];
+    console.log(data.value)
     const result = data.value.filter(item => item.ticker === ticker).map(
       item => ({
         time: item.date / 1000,
