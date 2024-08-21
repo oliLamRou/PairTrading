@@ -4,6 +4,8 @@
 	//import pair_trade from '@/components/form/pair_trade.vue';
 	//import pair_details from '@/components/charts/pair_details.vue';
 	import pair_preview from '../charts/pair_preview.vue';
+	import trader from '@/components/form/trader.vue'
+
 	import { useRoute } from 'vue-router'
 
     //import { ref, onMounted, onBeforeMount, watch, reactive, computed } from 'vue'
@@ -36,7 +38,6 @@
 			const response = await axios.get('http://localhost:5002/get_watchlist');
 			rowData.value = response.data;
 			console.log('get watchlist')
-			console.log(response.data)
 		} catch (error) {
 			console.error(error);
 		}
@@ -46,37 +47,40 @@
 </script>
 
 <template>
-	<div class="card d-flex flex-column bd-highlight m-3" style="min-width: 1200px;">
-		<div class="card-header">
-			<h3>Watchlists</h3>
-		</div>
-		<div class="card-body">
+	<div class="row">
+		<div class="col-md-2">
 			<div class="row">
-				<div class="col trade_col">
-					<ag-grid-vue
+				<div>
+					<div class="dropdown">
+						<button @click="toggleDropdown" class="dropdown-toggle">Select Watchlist
+						<!-- {{ selectedItem ? selectedItem : 'Watchlist' }} -->
+						</button>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<ag-grid-vue
                     :rowData="rowData"
                     :columnDefs="colDefs"
-                    style="height: 250px"
+                    style="height: 720px"
                     class="ag-theme-quartz"
                     @rowClicked="onRowClicked"
                     :rowSelection="rowSelection"
                     :suppressRowClickSelection="true"
-                >
-                </ag-grid-vue>			
-				</div>		
-			</div>
+					>
+					</ag-grid-vue>
+			</div>  
+										
 		</div>
-	</div>
-	<div class="row">
-      <div class="row">
-        <div class="col-md-9">
-			<pair_preview :pairProp="selectedPair"/>
-        </div>
-        <div class="col-md-3">
-          <!-- <pair_trade/> -->
-        </div>    
-      </div>
-    </div>
+			<div class="col-md-7">
+				<pair_preview :pairProp="selectedPair"/>
+			</div>
+			<div class="col-md-3">
+				<trader :pair="selectedPair"/>
+			</div>
+
+		
+		</div>
 </template>
 
 <style>
