@@ -1,23 +1,40 @@
 <script setup>
   import { ref, watch, onMounted, computed } from 'vue';
   import { usePairForm } from '@/stores/pairs';
+  import { useIbkr } from '@/stores/ibkr';
   import LWChart from '@/components/charts/LWChart.vue';
   
   const props = defineProps([
-    'pairProp'
+    'pair',
+    'data'
   ]);
 
+  const candleSize = ref("1 min");
+  const chartLength = ref("1 D")
   const isDataLoaded = ref(false);
-  const pair = ref(props.pairProp)
   const store = usePairForm();
-  const data = computed(() => store.pairs[store.pair].data);
-  const chartData = computed(() => getPairPrice());
+  const ibkr = useIbkr();
+  const dataA = ref()
+  const dataB = ref()
+  const chartData = ref(null)
+  const testRatio = ref(1)
+  let interval = null;
   
   onMounted( async () => {
-
+    await ibkr.connect();
   })
 
-  watch(() => props.pairProp, (newPair) => {
+  const test = () => {
+    console.log("TEST")
+    isDataLoaded.value = false
+
+    testRatio.value += 1;
+    console.log(testRatio.value)
+    chartData.value = accPairPrice()
+    isDataLoaded.value = true
+  }
+
+  watch(() => props.pair, (newPair) => {
     if (newPair) {
       isDataLoaded.value = false;
       console.log('Changed Pair: ', newPair)
@@ -25,46 +42,117 @@
     }
   });
 
+  const setCandleSize = (size) => {
+    stopInterval()
+    candleSize.value = size
+    switch(size){
+        case "1 day":
+          chartLength.value = "1 Y";
+          break;
+        case "1 min":
+          chartLength.value = "1 D";
+          break;
+        case "15 mins":
+          chartLength.value = "15 D";
+          break;
+        case "1 hour":
+          chartLength.value = "90 D";
+          break;
+        default:
+          chartLength.value = "1 D";
+          break;
+      }
+
+      relaodData()
+      startInterval();
+
+  }
+
+  const relaodData = async () => {
+    const newDataA = await ibkr.getHistoricalData(store.A, candleSize.value, chartLength.value)
+    const newDataB = await ibkr.getHistoricalData(store.B, candleSize.value, chartLength.value)
+    if (newDataA.length > 0){ dataA.value = newDataA };
+    if (newDataB.length > 0){ dataB.value = newDataB };
+    console.log('data loaded, length: ', newDataA.length, newDataB.length)
+    chartData.value = accPairPrice()
+    //chartData.value = pairPrice()
+    //console.log(dataA.value)
+  }
+
   const updatePair = async (newPair) => {
+    isDataLoaded.value = false
     store.pair = newPair;
     await store.load();
-    console.log("loaded")
+    // dataA.value = await ibkr.getHistoricalData(store.A)
+    // dataB.value = await ibkr.getHistoricalData(store.B)
+    // console.log('data loaded')
+    await relaodData()
     isDataLoaded.value = true;
   }
 
-  const getPairPrice = () => {
+  const pairPrice = () => {
+    //const hedge_ratio = store.pairs[store.pair]?.hedge_ratio;
+    const hedge_ratio = testRatio.value;
+    const reverse = store.pairs[store.pair]?.reverse;
+    const result = dataA.value.filter(item1 => dataB.value.some(item2 => item2.time === item1.time)).map(item1 => {
+      const item2 = dataB.value.find(item2 => item2.time === item1.time);
+      if(reverse){
+        return{
+          time: item1.time,
+          open: item2.open - (item1.open * hedge_ratio),
+          close: item2.close - (item1.close * hedge_ratio),
+          high: item2.high - (item1.high * hedge_ratio),
+          low: item2.low - (item1.low * hedge_ratio),
+        }
+      }else{
+        return{
+          time: item1.time,
+          open: item1.open - (item2.open * hedge_ratio),
+          close: item1.close - (item2.close * hedge_ratio),
+          high: item1.high - (item2.high * hedge_ratio),
+          low: item1.low - (item2.low * hedge_ratio),
+        }
+      }
+    });
+    return result
+  }
+
+  const accPairPrice = () => {
+    let data = dataA.value.map(obj => ({ ...obj, ticker: store.A })).concat(dataB.value.map(obj => ({ ...obj, ticker: store.B })))
+
     const hedge_ratio = store.pairs[store.pair]?.hedge_ratio;
     const reverse = store.pairs[store.pair]?.reverse;
-    if (!data.value || !data.value.length) return [];
+    //if (!data.value || !data.value.length) return [];
+    console.log('data')
     const result = Object.values(
-      data.value.reduce((acc, { date, close, open, high, low, ticker }) => {
-      if (!acc[date]) {
-        acc[date] = { date, closeA: null, closeB: null };
+      data.reduce((acc, { time, close, open, high, low, ticker }) => {
+      if (!acc[time]) {
+        acc[time] = { time, closeA: null, closeB: null };
       }
 
       if (ticker === store.A) {
-        acc[date].openA = open;
-        acc[date].highA = high;
-        acc[date].lowA = low;
-        acc[date].closeA = close;
+        acc[time].openA = open;
+        acc[time].highA = high;
+        acc[time].lowA = low;
+        acc[time].closeA = close;
       } else if (ticker === store.B) {
-        acc[date].openB = open;
-        acc[date].highB = high;
-        acc[date].lowB = low;
-        acc[date].closeB = close;
+        acc[time].openB = open;
+        acc[time].highB = high;
+        acc[time].lowB = low;
+        acc[time].closeB = close;
       }
 
-      if (acc[date].closeA !== null && acc[date].closeB !== null) {
+      if (acc[time].closeA !== null && acc[time].closeB !== null) {
         if (reverse) {
-          acc[date].open = acc[date].openB - (acc[date].openA * hedge_ratio);
-          acc[date].high = acc[date].highB - (acc[date].highA * hedge_ratio);
-          acc[date].low = acc[date].lowB - (acc[date].lowA * hedge_ratio);
-          acc[date].close = acc[date].closeB - (acc[date].closeA * hedge_ratio);
+          acc[time].open = acc[time].openB - (acc[time].openA * hedge_ratio);
+          acc[time].high = acc[time].highB - (acc[time].highA * hedge_ratio);
+          acc[time].low = acc[time].lowB - (acc[time].lowA * hedge_ratio);
+          acc[time].close = acc[time].closeB - (acc[time].closeA * hedge_ratio);
         } else {
-          acc[date].open = acc[date].openA - (acc[date].openB * hedge_ratio);
-          acc[date].high = acc[date].highA - (acc[date].highB * hedge_ratio);
-          acc[date].low = acc[date].lowA - (acc[date].lowB * hedge_ratio);
-          acc[date].close = acc[date].closeA - (acc[date].closeB * hedge_ratio);
+          acc[time].open = acc[time].openA - (acc[time].openB * hedge_ratio);
+          acc[time].high = acc[time].highA - (acc[time].highB * hedge_ratio);
+          acc[time].low = acc[time].lowA - (acc[time].lowB * hedge_ratio);
+          acc[time].close = acc[time].closeA - (acc[time].closeB * hedge_ratio);
         }
       }
 
@@ -72,28 +160,50 @@
       }, {})
     ).map(
       item => ({
-        time: item.date / 1000,
-        value: item.close,
+        time: item.time,
+        //value: item.close,
         open: item.open,
         high: item.high,
         low: item.low,
         close: item.close,
       })
     );
+    //return dataA.value;
     return result;
   };
 
-  
+  function startInterval(){
+    clearInterval(interval)
+    interval = setInterval(() => {
+      relaodData();
+    }, 5000)
+  }
+
+  function stopInterval(){
+    clearInterval(interval)
+    interval = null
+  }
 
 </script>
 
 <template>
   <div>
     <div class="row">
+      <div class="col" v-if="isDataLoaded">
+        <button @click="setCandleSize('1 day')">1 d</button>
+        <button @click="setCandleSize('1 min')">1 m</button>
+        <button @click="setCandleSize('15 mins')">15 m</button>
+        <button @click="setCandleSize('1 hour')">1 h</button>
+        <button @click="stopInterval()">Stop Interval</button>
+        <button @click="startInterval()">Start Interval</button>
+      </div>
+    </div>
+    <div class="row">
       <div class="col">
         <div class="card">
           <!-- Candle -->
-          <LWChart :A="getPairPrice()" :type="'candle'" :watermark="store.pair" v-if="isDataLoaded"/>
+          <LWChart :A="chartData" :type="'candle'" :watermark="pair" v-if="isDataLoaded"/>
+
         </div>
       </div>
     </div>

@@ -12,7 +12,7 @@ const router = createRouter({
         {name: 'Industry', path:'/',component:industry},
         {name: 'Details', path:'/details/:pair',component:details},
         {name: 'Watchlist', path:'/watchlist',component:watchlist},
-        {path:'/test/',component:chart_test},
+        
         {path:'/test/',component:testIbkr},
         {path:'/test_chart/',component:chart_test},
         {path:'/pair_details/',component:pair_details},

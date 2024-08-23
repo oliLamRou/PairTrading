@@ -2,6 +2,7 @@ import pandas as pd
 from flask import Flask, request
 from flask_cors import CORS
 from PairTrading.backend.scanner import Scanner
+from PairTrading.backend.data_wrangler import DataWrangler
 from PairTrading.backend.ibkr import IBClient
 from ibapi.client import Contract
 from threading import Thread
@@ -12,6 +13,8 @@ app = Flask(__name__)
 CORS(app)
 
 s = Scanner()
+dw = DataWrangler()
+
 count = 0
 ib = IBClient()
 
@@ -80,16 +83,7 @@ def update_pair_info():
 
 @app.route('/ibkr_connect', methods=['GET'])
 def ibkr_connect():
-    global count
-    global ib
-    print(ib)
-    ib_thread = Thread(target=ib.run)
-    ib_thread.start()
-    ib.connect('127.0.0.1', 7497, count)
-    
-    print("connect")
-    print(count)
-    count+=1
+    ib_connect()
     return ""
 
 @app.route('/ibkr_disconnect', methods=['GET'])
@@ -117,26 +111,69 @@ def ibkr_register_live_data():
     print(str(ib._data_buffer))
     return str(ib._data_queue)
 
-@app.route('/ibkr_get_historical_data', methods=['GET'])
-def ibkr_get_historical_data():
+@app.route('/ibkr_get_market_data', methods=['GET'])
+def ibkr_get_market_data():
+    ticker = request.args.get('ticker')
+
     global ib
     contract = Contract()
-    contract.symbol = "AAPL"
+    contract.symbol = ticker
     contract.secType = "STK"
     contract.exchange = "SMART"
     contract.currency = "USD"
 
-    # Request historical data
-    ib.reqHistoricalData(ib.next_id(), contract, "", "3600 S", "1 min", "TRADES", 1, 1, False, [])
+    # Request market data
+    req_id = ib.next_id()
+    ib.reqMktData(req_id, contract, "", True, False, [])
+
+    # Sleep while receiving live data
+    time.sleep(0.2)
+    #print(str(ib.get_data(req_id)))
+    return str(ib.get_data(req_id))
+
+@app.route('/ibkr_get_historical_data', methods=['GET'])
+def ibkr_get_historical_data():
+    ticker = request.args.get('ticker')
+    size = request.args.get('size')
+    length = request.args.get('length')
+
+    print('TICKER: ', ticker, size, length)
+
+    if ticker is None:
+        return []
+
+    contract = Contract()
+    contract.symbol = ticker
+    contract.secType = "STK"
+    contract.exchange = "SMART"
+    contract.currency = "USD"
+
+    global ib
+    req_id = ib.next_id()
+    ib.reqHistoricalData(req_id, contract, "", length, size, "TRADES", 1, 1, False, [])
 
     # Sleep while receiving live data
     time.sleep(0.7)
-    #print(str(ib.historical_data))
-    return ib.historical_data
+    data = ib.get_data(req_id)
+    #print(data)
+    return data
     
 @app.route('/get_watchlist', methods=['GET'])
 def get_watchlist():
     df = dw.get_pairs_in_watchlist('watchlist')
     return df.to_json(orient='records')
+
+def ib_connect():
+    global count
+    global ib
+
+    ib_thread = Thread(target=ib.run)
+    ib_thread.start()
+
+    ib.connect('127.0.0.1', 7497, count)
+    time.sleep(1)
+    
+    print("Try to connect, id: ", count)
+    count+=1
 
 app.run(debug=True, port=5002)

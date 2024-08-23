@@ -1,19 +1,26 @@
 <script setup>
-    import {ref, reactive, onMounted, computed } from 'vue';
+    import LWChart from '@/components/charts/LWChart.vue';
+    import { ref, onMounted, onBeforeMount, watch, reactive, computed, onUnmounted, onBeforeUnmount } from 'vue'
+    import axios from 'axios'
+    import { useIbkr } from '@/stores/ibkr';
 
     const props = defineProps([
         'pair'
     ]);
+    const marketData = ref("")
+    const ibkr = useIbkr();
 
-    // const pair = computed( () => {
-    //     return pa;
-    // })
     const long = () => {
         console.log("long")
     }
     onMounted( async () => {
-
+        //marketData.value = ibkr.getMarketData("AAPL")
     })
+
+    const getMarketData = async () => {
+        marketData.value = await ibkr.getMarketData("AAPL")
+        console.log(marketData.value)
+    }
 </script>
 
 <template>
@@ -38,6 +45,12 @@
                     <li><span class="bold">Hedge Ratio </span> 0.94</li>
                     <li><span class="bold">Reverse: </span> False</li>
                 </div>
+            </div>
+            <hr>
+            <div>  
+                <button @click="getMarketData()">Get mkt Data</button>
+
+                {{ marketData }}
             </div>
             <hr>
             <div class="row">

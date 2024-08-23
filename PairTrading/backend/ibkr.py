@@ -12,8 +12,8 @@ class IBClient(EWrapper, EClient):
         self.current_id = 0
         self._data_buffer = {}
         self._data_queue = {}
-        self.historical_data_buffer = []
-        self.historical_data = []
+        self.historical_data_buffer = {}
+        self.historical_data = {}
 
     def next_id(self):
         self.current_id += 1
@@ -25,42 +25,60 @@ class IBClient(EWrapper, EClient):
         else:
             print(f'Error {code}: {msg}')
 
-    def tickPrice(self, reqId, tickType, price, attrib):
-        print(f"Tick Price. Ticker Id: {reqId}, tickType: {TickTypeEnum.to_str(tickType)}, Price: {price}")
+    def tickPrice(self, req_id, tickType, price, attrib):
+        self.add_to_data(req_id, {'tickType' : TickTypeEnum.to_str(tickType), 'price': price})
+        print(f"Tick Price. Ticker Id: {req_id}, tickType: {TickTypeEnum.to_str(tickType)}, Price: {price}")
 
     def tickSize(self, reqId, tickType, size):
         print(f"Tick Size. Ticker Id: {reqId}, tickType: {TickTypeEnum.to_str(tickType)}, Size: {size}")
 
     def historicalData(self, req_id, bar):
-        data = {
-            'time': int(datetime.datetime.strptime(bar.date, "%Y%m%d %H:%M:%S").timestamp()),
-            'open': bar.open,
-            'high': bar.high,
-            'low': bar.low,
-            'close': bar.close,
-            'volume': bar.volume
-        }
-        self.historical_data_buffer.append(data)
+        if len(bar.date.split("  ")) == 2:
+            format = "%Y%m%d %H:%M:%S"
+        else:
+            format = "%Y%m%d"
+        try:
+            data = {
+                'time': int(datetime.datetime.strptime(bar.date, format).timestamp()),
+                'open': bar.open,
+                'high': bar.high,
+                'low': bar.low,
+                'close': bar.close,
+                'volume': bar.volume,
+            }
+        except:
+            data = {'time': 0, 'open': 0,'high': 0,'low': 0,'close': 0,'volume': 0}
+            
+        self.add_to_buffer(req_id, data)
 
     # callback when all historical data has been received
     def historicalDataEnd(self, req_id, start, end):
-        self.historical_data = self.historical_data_buffer.copy()
-        self.historical_data_buffer.clear()
-        #print(self.historical_data)
-        print('end of historical data')
+        self.buffer_to_data(req_id)
         print(f"end of data {start} {end}")
    
     #Data handling, will need to use proper queue
     def add_to_buffer(self, req_id, data):
-        if self._data_buffer.get(req_id, False):
-            self._data_buffer[req_id].append(data)
-        else:
+        if not self._data_buffer.get(req_id):
+            print('create id buffer')
             self._data_buffer[req_id] = [data]
+        else:
+            self._data_buffer[req_id].append(data)
 
     def buffer_to_data(self, req_id, clear=True):
         self._data_queue[req_id] = self._data_buffer.get(req_id, []).copy()
         if clear:
             self._data_buffer[req_id].clear()
+
+    def add_to_data(self, req_id, data):
+        self._data_queue[req_id] = data
+    
+    def get_data(self, req_id, clear = True):
+        if clear:
+            data = self._data_queue.pop(req_id, [])
+        else:
+            data = self._data_queue.get(req_id, [])
+            
+        return data
         
 if __name__ == '__main__':
     print("ib init")

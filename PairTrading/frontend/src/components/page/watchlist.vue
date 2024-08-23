@@ -73,7 +73,7 @@
 										
 		</div>
 			<div class="col-md-7">
-				<pair_preview :pairProp="selectedPair"/>
+				<pair_preview :pair="selectedPair"/>
 			</div>
 			<div class="col-md-3">
 				<trader :pair="selectedPair"/>
