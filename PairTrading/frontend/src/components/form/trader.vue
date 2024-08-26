@@ -8,6 +8,8 @@
         'pair'
     ]);
     const marketData = ref("")
+    const orderId = ref("")
+    const orderStatus = ref("")
     const ibkr = useIbkr();
 
     const long = () => {
@@ -20,6 +22,17 @@
     const getMarketData = async () => {
         marketData.value = await ibkr.getMarketData("AAPL")
         console.log(marketData.value)
+    }
+
+    const placeOrder = async () => {
+        response = await ibkr.placeOrder('AAPL', 10, 30, 'BUY', 'LMT')
+        orderId.value = response
+        console.log(response)
+    }
+
+    const getOrderStatus = async () => {
+        response = await ibkr.getOrderStatus(orderId.value)
+        console.log(response)
     }
 </script>
 
@@ -71,9 +84,21 @@
             <div class="row">
                 <div class="col">
                     <br>
-                    <button @click="long">Long</button>
+                    <button @click="placeOrder()">Long</button>
                     <button @click="short">Short</button>
                     <button @click="closePosition">Close Position</button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <br>
+                    <button @click="getOrderStatus()">Order Status</button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    {{ orderStatus }}
+                    
                 </div>
             </div>
         </div>

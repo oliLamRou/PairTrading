@@ -12,8 +12,6 @@ class IBClient(EWrapper, EClient):
         self.current_id = 0
         self._data_buffer = {}
         self._data_queue = {}
-        self.historical_data_buffer = {}
-        self.historical_data = {}
 
     def next_id(self):
         self.current_id += 1
@@ -27,7 +25,7 @@ class IBClient(EWrapper, EClient):
 
     def tickPrice(self, req_id, tickType, price, attrib):
         self.add_to_data(req_id, {'tickType' : TickTypeEnum.to_str(tickType), 'price': price})
-        print(f"Tick Price. Ticker Id: {req_id}, tickType: {TickTypeEnum.to_str(tickType)}, Price: {price}")
+        print(f"Tick Price. Request Id: {req_id}, tickType: {TickTypeEnum.to_str(tickType)}, Price: {price}")
 
     def tickSize(self, reqId, tickType, size):
         print(f"Tick Size. Ticker Id: {reqId}, tickType: {TickTypeEnum.to_str(tickType)}, Size: {size}")
@@ -55,7 +53,27 @@ class IBClient(EWrapper, EClient):
     def historicalDataEnd(self, req_id, start, end):
         self.buffer_to_data(req_id)
         print(f"end of data {start} {end}")
-   
+
+    def orderStatus(self, orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld, mktCapPrice):
+        data = {'status': status, 'filled': filled, 'remaining': remaining, 'avgFillPrice': avgFillPrice}
+        self.add_to_data(orderId, data)
+        print(f"Order Status - ID: {orderId}, Status: {status}, Filled: {filled}, Remaining: {remaining}, AvgFillPrice: {avgFillPrice}")
+    
+    def openOrder(self, orderId, contract, order, orderState):
+        data = {'orderId': orderId, 
+                'ticker': contract.symbol, 
+                'exchange': contract.exchange,
+                'action':order.action,
+                'orderType': order.orderType,
+                'quantity': order.totalQuantity,
+                'status': orderState.status
+                }
+        self.add_to_data(orderId, data)
+        print(f"Open Order - ID: {orderId}, Symbol: {contract.symbol}, SecType: {contract.secType}, Exchange: {contract.exchange}, Action: {order.action}, OrderType: {order.orderType}, TotalQty: {order.totalQuantity}, Status: {orderState.status}")
+
+    def execDetails(self, req_id, contract, execution):
+        print(f"Execution Details - ID: {req_id}, Symbol: {contract.symbol}, SecType: {contract.secType}, Exchange: {contract.exchange}, Action: {execution.side}, Shares: {execution.shares}, Price: {execution.price}")
+
     #Data handling, will need to use proper queue
     def add_to_buffer(self, req_id, data):
         if not self._data_buffer.get(req_id):
@@ -70,7 +88,11 @@ class IBClient(EWrapper, EClient):
             self._data_buffer[req_id].clear()
 
     def add_to_data(self, req_id, data):
-        self._data_queue[req_id] = data
+        if not self._data_queue.get(req_id):
+            print('create id buffer')
+            self._data_queue[req_id] = [data]
+        else:
+            self._data_queue[req_id].append(data)
     
     def get_data(self, req_id, clear = True):
         if clear:

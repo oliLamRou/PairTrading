@@ -36,13 +36,29 @@ export const useIbkr = defineStore('ibkr',{
         console.error(error);
         }
     },
-    async getHistoricalData(tickerArg, size, length){
+    async getHistoricalData(ticker, size, length){
         try {
             const response = await axios.get('http://localhost:5002/ibkr_get_historical_data', {
                 params: {
-                    ticker: tickerArg,
+                    ticker: ticker,
                     size: size,
                     length: length
+                }
+            });
+            return response.data
+        } catch (error) {
+        console.error(error);
+        }
+    },
+    async placeOrder(ticker, quantity, price, action, orderType){
+        try {
+            const response = await axios.get('http://localhost:5002/ibkr_place_order', {
+                params: {
+                    ticker: ticker,
+                    quantity: quantity,
+                    price: price,
+                    action: action,
+                    orderType: orderType
                 }
             });
             return response.data

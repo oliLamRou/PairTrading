@@ -5,6 +5,8 @@ from PairTrading.backend.scanner import Scanner
 from PairTrading.backend.data_wrangler import DataWrangler
 from PairTrading.backend.ibkr import IBClient
 from ibapi.client import Contract
+from ibapi.order import Order
+
 from threading import Thread
 import time
 from datetime import datetime
@@ -127,7 +129,7 @@ def ibkr_get_market_data():
     ib.reqMktData(req_id, contract, "", True, False, [])
 
     # Sleep while receiving live data
-    time.sleep(0.2)
+    time.sleep(0.6)
     #print(str(ib.get_data(req_id)))
     return str(ib.get_data(req_id))
 
@@ -162,6 +164,40 @@ def ibkr_get_historical_data():
 def get_watchlist():
     df = dw.get_pairs_in_watchlist('watchlist')
     return df.to_json(orient='records')
+
+@app.route('/ibkr_place_order', methods=['GET'])
+def ibkr_place_order():
+    ticker = request.args.get('ticker')
+    quantity = request.args.get('quantity')
+    price = request.args.get('price')
+    action = request.args.get('action')
+    orderType = request.args.get('orderType')
+
+    print('Place Order: ', ticker, quantity, price, action, orderType)
+
+    if ticker is None:
+        return []
+
+    contract = Contract()
+    contract.symbol = ticker
+    contract.secType = "STK"
+    contract.exchange = "SMART"
+    contract.currency = "USD"
+
+    order = Order()
+    order.totalQuantity = quantity
+    order.action = action
+    order.orderType = orderType
+    order.eTradeOnly = False
+    order.firmQuoteOnly = False
+    if orderType == 'LMT':
+        order.lmtPrice = price
+
+    global ib
+    req_id = ib.next_id()
+    ib.placeOrder(req_id, contract, order)
+
+    return req_id
 
 def ib_connect():
     global count
