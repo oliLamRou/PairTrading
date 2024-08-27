@@ -4,7 +4,9 @@ from ibapi.common import TagValueList, TickerId
 from ibapi.wrapper import EWrapper
 from ibapi.client import Contract
 from ibapi.ticktype import TickTypeEnum
-
+import threading
+from ib_insync import *
+import asyncio
 
 class IBClient(EWrapper, EClient):
     def __init__(self):
@@ -101,8 +103,38 @@ class IBClient(EWrapper, EClient):
             data = self._data_queue.get(req_id, [])
             
         return data
-        
+
 if __name__ == '__main__':
-    print("ib init")
-    client = IBClient('127.0.0.1', 7497, 0)
-    time.sleep(2)
+    util.patchAsyncio()
+    ib = IB()
+    ib.connect('127.0.0.1', 7497, 1)
+    
+
+    contract = Stock('NVDA', 'SMART', 'USD')
+
+    def onMarketDataUpdate(ticker):
+        print(f"Market Data Updated: Last price: {ticker.last}, Bid: {ticker.bid}, Ask: {ticker.ask}")
+
+    ticker = ib.reqMktData(contract, '', False, False)
+    ib.sleep(1)
+    print(ticker.marketPrice())
+    #ticker.updateEvent += onMarketDataUpdate
+
+    # def run_ib_loop():
+    #     loop = util.getLoop()
+    #     asyncio.set_event_loop(loop)
+    
+    #ib.run()
+
+    # thread = threading.Thread(target=run_ib_loop, daemon=True)
+    # thread.start()
+    
+
+    
+    # Keep the event loop running
+    #ib.run()
+    print('what')
+    for i in range(0, 10):
+        print(i)
+        time.sleep(3)
+    print(ticker.marketPrice())

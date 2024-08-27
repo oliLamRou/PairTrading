@@ -6,6 +6,7 @@ from PairTrading.backend.data_wrangler import DataWrangler
 from PairTrading.backend.ibkr import IBClient
 from ibapi.client import Contract
 from ibapi.order import Order
+from ib_insync import *
 
 from threading import Thread
 import time
@@ -196,6 +197,21 @@ def ibkr_place_order():
     global ib
     req_id = ib.next_id()
     ib.placeOrder(req_id, contract, order)
+
+    return req_id
+
+@app.route('/ibkr_order_status', methods=['GET'])
+def ibkr_order_status():
+    id = request.args.get('id')
+
+    print('Order Status: ', id)
+
+    if id is None:
+        return []
+
+    global ib
+    req_id = ib.next_id()
+    ib.orderStatus(req_id, id)
 
     return req_id
 
