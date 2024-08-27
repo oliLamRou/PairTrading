@@ -27,6 +27,13 @@
 	onMounted( ()=> {
 		getWatchlist();
 		console.log(route)
+		
+		//Live market data stream events
+		// const eventSource = new EventSource('http://127.0.0.1:5002/ibkr_stream/market_data');
+        // eventSource.onmessage = (event) => {
+        //     console.log(event.data)
+        //     marketData.value = event.data
+        // }
 	})
 
     const onRowClicked = (value) => {

@@ -1,16 +1,16 @@
 import pandas as pd
-from flask import Flask, request
+from flask import Flask, request, Response
 from flask_cors import CORS
 from PairTrading.backend.scanner import Scanner
 from PairTrading.backend.data_wrangler import DataWrangler
 from PairTrading.backend.ibkr import IBClient
 from ibapi.client import Contract
 from ibapi.order import Order
-from ib_insync import *
 
 from threading import Thread
 import time
 from datetime import datetime
+from queue import Queue
 
 app = Flask(__name__)
 CORS(app)
@@ -20,6 +20,23 @@ dw = DataWrangler()
 
 count = 0
 ib = IBClient()
+mkt_data = Queue()
+
+#Callback to receive live marketdata, add data to queue
+def market_data_callback(data):
+    mkt_data.put_nowait(data)
+
+@app.route('/ibkr_stream/market_data')
+def mkt_stream():
+    global mkt_data
+    def generate():
+        while True:
+            if mkt_data.qsize() > 0:
+                data = mkt_data.get()
+                for d in data:
+                    print("Sending data", d)
+                    yield f"data: {str(d)}\n\n"
+    return Response(generate(), mimetype='text/event-stream')
 
 @app.route('/get_potential_pair', methods=['GET'])
 def get_potential_pair():
@@ -97,22 +114,23 @@ def ibkr_disconnect():
     print('IB disconnected')
     return ""
 
-@app.route('/ibkr_register_live_data', methods=['GET'])
-def ibkr_register_live_data():
+@app.route('/ibkr_live_market_data', methods=['GET'])
+def ibkr_live_market_data():
+    ticker = request.args.get('ticker')
     global ib
+    ib.mktDataCallback = market_data_callback
+
     contract = Contract()
-    contract.symbol = "AAPL"
+    contract.symbol = ticker
     contract.secType = "STK"
     contract.exchange = "SMART"
     contract.currency = "USD"
 
     # Request live market data
-    ib.reqMktData(ib.next_id(), contract, "232", False, False, [])
+    req_id = ib.next_id()
+    ib.reqMktData(req_id, contract, "232", False, False, [])
 
-    # Sleep while receiving live data
-    time.sleep(2)
-    print(str(ib._data_buffer))
-    return str(ib._data_queue)
+    return str(req_id)
 
 @app.route('/ibkr_get_market_data', methods=['GET'])
 def ibkr_get_market_data():

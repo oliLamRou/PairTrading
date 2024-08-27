@@ -14,6 +14,7 @@ class IBClient(EWrapper, EClient):
         self.current_id = 0
         self._data_buffer = {}
         self._data_queue = {}
+        self.mktDataCallback: function = None
 
     def next_id(self):
         self.current_id += 1
@@ -26,11 +27,19 @@ class IBClient(EWrapper, EClient):
             print(f'Error {code}: {msg}')
 
     def tickPrice(self, req_id, tickType, price, attrib):
-        self.add_to_data(req_id, {'tickType' : TickTypeEnum.to_str(tickType), 'price': price})
+        data = [{'req_id': req_id, 'tickType' : TickTypeEnum.to_str(tickType), 'price': price}]
+        if self.mktDataCallback is not None:
+            self.mktDataCallback(data)
+
+        #self.add_to_data(req_id, {'tickType' : TickTypeEnum.to_str(tickType), 'price': price})
         print(f"Tick Price. Request Id: {req_id}, tickType: {TickTypeEnum.to_str(tickType)}, Price: {price}")
 
-    def tickSize(self, reqId, tickType, size):
-        print(f"Tick Size. Ticker Id: {reqId}, tickType: {TickTypeEnum.to_str(tickType)}, Size: {size}")
+    def tickSize(self, req_id, tickType, size):
+        data = [{'req_id': req_id, 'tickType' : TickTypeEnum.to_str(tickType), 'size': size}]
+        if self.mktDataCallback is not None:
+            self.mktDataCallback(data)
+            
+        print(f"Tick Size. Ticker Id: {req_id}, tickType: {TickTypeEnum.to_str(tickType)}, Size: {size}")
 
     def historicalData(self, req_id, bar):
         if len(bar.date.split("  ")) == 2:
@@ -105,19 +114,17 @@ class IBClient(EWrapper, EClient):
         return data
 
 if __name__ == '__main__':
-    util.patchAsyncio()
-    ib = IB()
+    ib = IBClient()
     ib.connect('127.0.0.1', 7497, 1)
     
+    thread = threading.Thread(target=ib.run, daemon=True)
+    thread.start()
 
     contract = Stock('NVDA', 'SMART', 'USD')
+    time.sleep(1)
+    ib.reqMktData(1, contract, '', False, False, [])
+    
 
-    def onMarketDataUpdate(ticker):
-        print(f"Market Data Updated: Last price: {ticker.last}, Bid: {ticker.bid}, Ask: {ticker.ask}")
-
-    ticker = ib.reqMktData(contract, '', False, False)
-    ib.sleep(1)
-    print(ticker.marketPrice())
     #ticker.updateEvent += onMarketDataUpdate
 
     # def run_ib_loop():
@@ -126,8 +133,7 @@ if __name__ == '__main__':
     
     #ib.run()
 
-    # thread = threading.Thread(target=run_ib_loop, daemon=True)
-    # thread.start()
+    
     
 
     

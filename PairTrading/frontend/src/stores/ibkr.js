@@ -5,6 +5,7 @@ import qs from 'qs';
 export const useIbkr = defineStore('ibkr',{
   state:()=>({
     connectionId: 0,
+    marketData: []
   }),
   getters: {
     //A() { return this.pair.split('__')[0] },
@@ -18,17 +19,21 @@ export const useIbkr = defineStore('ibkr',{
         console.error(error);
         }
     },
-    async registerLiveData(){
+    async liveMarketData(ticker){
         try {
-            const response = await axios.get('http://localhost:5002/ibkr_register_live_data');
+            const response = await axios.get('http://localhost:5002/ibkr_live_market_data', {
+                params: {ticker: ticker}
+            });
+            console.log("req live data, req_id: ", response.data)
+            return response.data
         } catch (error) {
         console.error(error);
         }
     },
-    async getMarketData(tickerArg){
+    async getMarketData(ticker){
         try {
             const response = await axios.get('http://localhost:5002/ibkr_get_market_data', {
-                params: {ticker: tickerArg}
+                params: {ticker: ticker}
             });
             console.log(response.data)
             return response.data
