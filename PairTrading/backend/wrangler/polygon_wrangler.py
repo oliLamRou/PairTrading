@@ -1,79 +1,73 @@
 import pandas as pd
-import warnings
 
+from PairTrading.backend import polygon_session, polygon_engine
+from PairTrading.backend.models import SicCode, TickerDetails, MarketSnapshot
 from PairTrading.backend.polygon import Polygon
-from PairTrading.backend.database import DataBase
-from PairTrading.src import _constant
-from PairTrading.backend import _db_constant
 
 class PolygonWrangler(Polygon):
     def __init__(self):
         Polygon.__init__(self)
-        self.__polygon_db = DataBase(_db_constant.POLYGON_DB)
 
         #Properties
         self._all_ticker_info = pd.DataFrame()
         self._sic_code = pd.DataFrame()
         self._market_snapshot = pd.DataFrame()
-        
+
     @property
     def sic_code(self) -> pd.DataFrame():
         if self._sic_code.empty:
-            self._sic_code = self.__polygon_db.get_table(_db_constant.SIC_CODE_TABLE_NAME)
+            query = polygon_session.query(SicCode)
+            self._sic_code = pd.read_sql_query(query.statement, polygon_engine)
         
         return self._sic_code
 
     @property
     def all_ticker_info(self) -> pd.DataFrame():
         if self._all_ticker_info.empty:
-            self._all_ticker_info = self.__polygon_db.get_table(_db_constant.TICKER_INFO_TABLE_NAME)
+            query = polygon_session.query(TickerDetails)
+            self._all_ticker_info = pd.read_sql_query(query.statement, polygon_engine)
 
         return self._all_ticker_info
-
-    #MARKET
+        
     def market_snapshot(self, update: bool = False) -> pd.DataFrame():
         if update:
-            print(f"--> Clearing and downloading: {_db_constant.MARKET_SNAPSHOT_TABLE_NAME}\n")
-            self.__polygon_db.clear_table(_db_constant.MARKET_SNAPSHOT_TABLE_NAME)
-            
-            results = self._grouped_daily()
-            for result in results:
-                self.__polygon_db.add_row(_db_constant.MARKET_SNAPSHOT_TABLE_NAME, result)
+            polygon_session.query(MarketSnapshot).delete()
+            print(self._grouped_daily())
+            polygon_session.bulk_insert_mappings(MarketSnapshot, self._grouped_daily())
+            polygon_session.commit()
 
         if self._market_snapshot.empty:
-            self._market_snapshot = self.__polygon_db.get_table(_db_constant.MARKET_SNAPSHOT_TABLE_NAME)
+            query = polygon_session.query(MarketSnapshot)
+            self._market_snapshot = pd.read_sql_query(query.statement, polygon_engine)
 
         return self._market_snapshot
 
-    def ticker_info(self,
-            ticker: str,
-            update: bool = False
-        ) -> pd.DataFrame():
+    def ticker_info(self, ticker: str, update: bool = False) -> pd.DataFrame():
+        #Check if ticker is in TickerDetails table
+        has_value = polygon_session.query(
+            polygon_session.query(TickerDetails).filter_by(ticker=ticker).exists()
+            ).scalar()
 
-        #Do when not exists in DB or Update is True
-        if not self.__polygon_db.has_value(
-                _db_constant.TICKER_INFO_TABLE_NAME, 'ticker', ticker
-                ) or update:
-
+        if update or not has_value:
             results = self._ticker_details(ticker)
             if not results:
                 return
 
-            print('{} --> {}: {} ...\n'.format(
-                _db_constant.TICKER_INFO_TABLE_NAME, 
-                "Updating" if update else "Adding", 
-                " ".join(str(r) for r in results.values())[:60]
-                )
-            )
             if update:
-                self.__polygon_db.update_row(_db_constant.TICKER_INFO_TABLE_NAME, results, 'ticker', ticker)
+                polygon_session.query(TickerDetails).filter_by(ticker=ticker).update(results)
             else:
-                self.__polygon_db.add_row(_db_constant.TICKER_INFO_TABLE_NAME, results)
+                polygon_session.query(TickerDetails).add(results)
 
-            #Reload table
-            self._all_ticker_info = self.__polygon_db.get_table(_db_constant.TICKER_INFO_TABLE_NAME)
+            polygon_session.commit()
 
+            query = polygon_session.query(TickerDetails)
+            self._all_ticker_info = pd.read_sql_query(query.statement, polygon_engine)
+
+        #TODO: this could be done with filter instead of calling the whole table
         return self.all_ticker_info[self.all_ticker_info.ticker == ticker]
 
 if __name__ == '__main__':
-    pw = DataWrangler()
+    pw = PolygonWrangler()
+    # rows = polygon_session.query(MarketSnapshot)
+    df = pw.ticker_info('MSTR')
+    print(df)

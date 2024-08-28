@@ -7,8 +7,3 @@ class DataWrangler(YahooWrangler, PolygonWrangler, UserWrangler):
         YahooWrangler.__init__(self)
         PolygonWrangler.__init__(self)
         UserWrangler.__init__(self)
-
-if __name__ == '__main__':
-    dw = DataWrangler()
-    df = dw.market_data(['wec', 'MSTR'])
-    print(df.to_json(orient='records'))

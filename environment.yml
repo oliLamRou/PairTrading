@@ -4,15 +4,13 @@ channels:
   - defaults
 dependencies:
   - pandas
-  - pandas-ta
-  - seaborn
   - numpy=1.26.4
-  - sqlite
   - python=3.11
-  - dash
-  - dash-bootstrap-components
-  - dash-ag-grid
   - yfinance
   - flask
+  - flask-cors
+  - flask-restful  
   - werkzeug=2.2.2
   - flask-cors
+  - sqlalchemy
+  - statsmodels

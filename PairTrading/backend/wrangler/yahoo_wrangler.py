@@ -1,29 +1,24 @@
-import time
 import pandas as pd
 import yfinance as yf
 
-from PairTrading.backend.database import DataBase
-from PairTrading.src import _constant
-from PairTrading.backend import _db_constant
+from PairTrading.backend import yahoo_session, yahoo_engine
+from PairTrading.backend.models import MarketData, FailedTicker
 
 class YahooWrangler:
-    def __init__(self):
-        self.__yfinance_db = DataBase(_db_constant.YFINANCE_DB)
-        
-    def write_market_data(self, df):
-        for i, row in df.iterrows():
-            row = row.to_dict()
-            self.__yfinance_db.add_row(_db_constant.MARKET_DATA_TABLE_NAME, row)
-
     def manage_wrong_tickers(self, tickers):
-        previous_failed_tickers = self.__yfinance_db.get_rows(_db_constant.FAILED_TICKER_TABLE_NAME, 'ticker', tickers).ticker.unique()
-        downloaded_tickers = self.__yfinance_db.get_rows(_db_constant.MARKET_DATA_TABLE_NAME, 'ticker', tickers).ticker.unique()
+        query = yahoo_session.query(FailedTicker).filter(FailedTicker.Ticker.in_(tickers))
+        previous_failed_tickers = pd.read_sql_query(query.statement, yahoo_engine).ticker.unique()
+        
+        query = yahoo_session.query(MarketData).filter(MarketData.Ticker.in_(tickers))
+        downloaded_tickers = pd.read_sql_query(query.statement, yahoo_engine).ticker.unique()
+        
         failed_to_download = set(tickers).difference(downloaded_tickers)
         failed_to_download = failed_to_download.difference(previous_failed_tickers)
 
         if failed_to_download:
-            print(f'--> Adding {failed_to_download} to {_db_constant.FAILED_TICKER_TABLE_NAME}')
-            self.__yfinance_db.add_rows(_db_constant.FAILED_TICKER_TABLE_NAME, [tuple([ticker]) for ticker in failed_to_download], ['ticker'])
+            print(f'--> Adding {failed_to_download} to {FailedTicker.__table__}')
+            rows = [{'Ticker': ticker} for ticker in failed_to_download]
+            yahoo_session.bulk_insert_mappings(FailedTicker, rows)
 
     def market_data(self,
             tickers: list,
@@ -39,31 +34,35 @@ class YahooWrangler:
         #Start with download everything
         good_tickers = set(tickers)
 
-        #to_download minus tickers that previously failed to download
-        previous_failed_tickers = self.__yfinance_db.get_rows(_db_constant.FAILED_TICKER_TABLE_NAME, 'ticker', tickers).ticker.unique()
+        #to_download minus tickers that previously failed to download        
+        query = yahoo_session.query(FailedTicker).filter(FailedTicker.Ticker.in_(tickers))
+        previous_failed_tickers = pd.read_sql_query(query.statement, yahoo_engine).ticker.unique()
         good_tickers = good_tickers.difference(previous_failed_tickers)
 
         if update:
-            self.__yfinance_db._delete_rows(_db_constant.MARKET_DATA_TABLE_NAME, 'ticker', good_tickers)
+            yahoo_session.query(MarketData).filter(MarketData.Ticker.in_(good_tickers)).delete()
         else:
-            downloaded_tickers = self.__yfinance_db.get_rows(_db_constant.MARKET_DATA_TABLE_NAME, 'ticker', tickers).ticker.unique()
+            query = yahoo_session.query(MarketData).filter(MarketData.Ticker.in_(tickers))
+            downloaded_tickers = pd.read_sql_query(query.statement, yahoo_engine).ticker.unique()
             good_tickers = good_tickers.difference(downloaded_tickers)
             
-
         if good_tickers:
             self.download_market_data(good_tickers, timespan, period)
-            print(f'--> Trying to download: {good_tickers}\n')
-
+            
         self.manage_wrong_tickers(tickers)
+        yahoo_session.commit()
 
         # READ and RETURN
-        df = self.__yfinance_db.get_rows(_db_constant.MARKET_DATA_TABLE_NAME, 'ticker', tickers)
-        df.date = pd.to_datetime(df.date)
+        query = yahoo_session.query(MarketData).filter(MarketData.Ticker.in_(tickers))
+        df = pd.read_sql_query(query.statement, yahoo_engine)
+        if not df.empty:
+            df.date = pd.to_datetime(df.date)
+        
         return df
 
     def download_market_data(self, good_tickers, timespan, period):
         if not good_tickers:
-            return 
+            return
 
         df = yf.download(good_tickers, period=period)
         if df.empty:
@@ -73,20 +72,17 @@ class YahooWrangler:
             df = df.stack(level='Ticker', future_stack=True).reset_index().sort_values(['Ticker', 'Date'])
         else:
             df = df.reset_index()
-            df['ticker'] = good_tickers.pop()
+            df['Ticker'] = good_tickers.pop()
 
-        df.rename(columns={k: v[0] for k, v in _constant.MARKET_DATA_COLUMNS.items()}, inplace=True)
-        df['timespan'] = timespan
-        df['date'] = df['date'].dt.strftime('%Y-%m-%d')
-        df = df[df.close.notna()]
+        df['Timespan'] = timespan
+        df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
+        df = df[df.Close.notna()]
 
         #WRITE
-        columns = df.columns.to_list()
-        rows = [tuple(row.to_list()) for i, row in df.iterrows()]
-        self.__yfinance_db.add_rows(_db_constant.MARKET_DATA_TABLE_NAME, rows, columns)
-
+        yahoo_session.bulk_insert_mappings(MarketData, df.to_dict(orient='records'))
+        print(f'Adding {",".join(df.Ticker.unique())} to {MarketData.__table__}')
 
 if __name__ == '__main__':
     yw = YahooWrangler()
-    tickers = ['COOP', 'MSTR']
-    df = yw.market_data(tickers, update=False, period='1mo')
+    df = yw.market_data(['ARKK', 'IBIT', 'F', 'T', 'AAPL'], update=False)
+    print(df.date)
