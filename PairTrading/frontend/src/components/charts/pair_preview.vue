@@ -14,6 +14,8 @@
   const isDataLoaded = ref(false);
   const store = usePairForm();
   const ibkr = useIbkr();
+  ibkr.pairStore = store;
+
   const dataA = ref()
   const dataB = ref()
   const chartData = ref(null)
@@ -64,17 +66,22 @@
       }
 
       relaodData()
-      startInterval();
+      //startInterval();
 
   }
 
   const relaodData = async () => {
-    const newDataA = await ibkr.getHistoricalData(store.A, candleSize.value, chartLength.value)
-    const newDataB = await ibkr.getHistoricalData(store.B, candleSize.value, chartLength.value)
-    if (newDataA.length > 0){ dataA.value = newDataA };
-    if (newDataB.length > 0){ dataB.value = newDataB };
-    console.log('data loaded, length: ', newDataA.length, newDataB.length)
-    chartData.value = accPairPrice()
+    //const newDataA = await ibkr.getHistoricalData(store.A, candleSize.value, chartLength.value)
+    //const newDataB = await ibkr.getHistoricalData(store.B, candleSize.value, chartLength.value)
+    //if (newDataA.length > 0){ dataA.value = newDataA };
+    //if (newDataB.length > 0){ dataB.value = newDataB };
+    ibkr.barSize = candleSize.value
+    ibkr.chartLength = chartLength.value
+    await ibkr.updatePairData()
+    //console.log('data loaded, length: ', newDataA.length, newDataB.length)
+    //chartData.value = ibkr.calculatePairPrice()
+
+    //chartData.value = accPairPrice()
     //chartData.value = pairPrice()
     //console.log(dataA.value)
   }
@@ -83,43 +90,14 @@
     isDataLoaded.value = false
     store.pair = newPair;
     await store.load();
-    // dataA.value = await ibkr.getHistoricalData(store.A)
-    // dataB.value = await ibkr.getHistoricalData(store.B)
-    // console.log('data loaded')
+    //ibkr.pairInfo[A] = store.A
+    //ibkr.pairInfo[B] = store.B
     await relaodData()
     isDataLoaded.value = true;
   }
 
-  const pairPrice = () => {
-    //const hedge_ratio = store.pairs[store.pair]?.hedge_ratio;
-    const hedge_ratio = testRatio.value;
-    const reverse = store.pairs[store.pair]?.reverse;
-    const result = dataA.value.filter(item1 => dataB.value.some(item2 => item2.time === item1.time)).map(item1 => {
-      const item2 = dataB.value.find(item2 => item2.time === item1.time);
-      if(reverse){
-        return{
-          time: item1.time,
-          open: item2.open - (item1.open * hedge_ratio),
-          close: item2.close - (item1.close * hedge_ratio),
-          high: item2.high - (item1.high * hedge_ratio),
-          low: item2.low - (item1.low * hedge_ratio),
-        }
-      }else{
-        return{
-          time: item1.time,
-          open: item1.open - (item2.open * hedge_ratio),
-          close: item1.close - (item2.close * hedge_ratio),
-          high: item1.high - (item2.high * hedge_ratio),
-          low: item1.low - (item2.low * hedge_ratio),
-        }
-      }
-    });
-    return result
-  }
-
   const accPairPrice = () => {
     let data = dataA.value.map(obj => ({ ...obj, ticker: store.A })).concat(dataB.value.map(obj => ({ ...obj, ticker: store.B })))
-
     const hedge_ratio = store.pairs[store.pair]?.hedge_ratio;
     const reverse = store.pairs[store.pair]?.reverse;
     //if (!data.value || !data.value.length) return [];
@@ -202,7 +180,7 @@
       <div class="col">
         <div class="card">
           <!-- Candle -->
-          <LWChart :A="chartData" :type="'candle'" :watermark="pair" v-if="isDataLoaded"/>
+          <LWChart :A="ibkr.chartData['pairPrice']" :type="'candle'" :watermark="pair" v-if="isDataLoaded"/>
 
         </div>
       </div>

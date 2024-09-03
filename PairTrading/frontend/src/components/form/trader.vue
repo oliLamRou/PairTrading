@@ -17,16 +17,17 @@
     }
     onMounted( async () => {
         console.log("trader")
+        marketData.value = ibkr.liveData
         //marketData.value = ibkr.getMarketData("AAPL")
-        const eventSource = new EventSource('http://127.0.0.1:5002/ibkr_stream/market_data');
-        eventSource.onmessage = (event) => {
-            console.log(event.data)
-            marketData.value = event.data
-        }
+        // const eventSource = new EventSource('http://127.0.0.1:5002/ibkr_stream/market_data');
+        // eventSource.onmessage = (event) => {
+        //     console.log(event.data)
+        //     marketData.value = event.data
+        // }
     })
 
     const getMarketData = async () => {
-        marketData.value = await ibkr.liveMarketData("AAPL")
+        //marketData.value = await ibkr.liveMarketData("AAPL")
         console.log(marketData.value)
     }
 
@@ -69,7 +70,7 @@
             <div>  
                 <button @click="getMarketData()">Get mkt Data</button>
 
-                {{ marketData }}
+                {{ ibkr.liveData }}
             </div>
             <hr>
             <div class="row">

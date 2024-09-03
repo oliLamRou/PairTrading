@@ -7,6 +7,7 @@
 	import trader from '@/components/form/trader.vue'
 
 	import { useRoute } from 'vue-router'
+	import { useIbkr } from '@/stores/ibkr';
 
     //import { ref, onMounted, onBeforeMount, watch, reactive, computed } from 'vue'
 
@@ -15,6 +16,7 @@
     import { AgGridVue } from "ag-grid-vue3"; // Vue Data Grid Component
 
 	const route = useRoute();
+	const ibkr = useIbkr();
 	const rowData = ref(null);
 	const rowSelection = ref(null);
 	const selectedPair = ref(null);
@@ -27,17 +29,14 @@
 	onMounted( ()=> {
 		getWatchlist();
 		console.log(route)
-		
-		//Live market data stream events
-		// const eventSource = new EventSource('http://127.0.0.1:5002/ibkr_stream/market_data');
-        // eventSource.onmessage = (event) => {
-        //     console.log(event.data)
-        //     marketData.value = event.data
-        // }
+		ibkr.startLiveStream()
 	})
 
-    const onRowClicked = (value) => {
+    const onRowClicked = async (value) => {
 		selectedPair.value = value.data.pair
+		await ibkr.cancelAllLiveData()
+		ibkr.liveMarketData(selectedPair.value.split('__')[0])
+		ibkr.liveMarketData(selectedPair.value.split('__')[1])
     }
 
 	const getWatchlist = async () => {
@@ -49,11 +48,26 @@
 			console.error(error);
 		}
 	}
+	const cancelStream = () => {
+		ibkr.cancelAllLiveData()
+	}
 
 
 </script>
 
 <template>
+	<div class="row">
+		<div class="col-md-2">
+
+		</div>
+		<div class="col-md-7">
+			<button @click="cancelStream()">cancel streams</button>
+		</div>
+		<div class="col-md-2">
+
+		</div>
+		
+	</div>
 	<div class="row">
 		<div class="col-md-2">
 			<div class="row">
@@ -77,6 +91,9 @@
 					>
 					</ag-grid-vue>
 			</div>  
+			<div class="row">
+				<!-- {{ ibkr.liveData }} -->
+			</div> 
 										
 		</div>
 			<div class="col-md-7">

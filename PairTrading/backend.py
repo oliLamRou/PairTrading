@@ -18,7 +18,7 @@ CORS(app)
 s = Scanner()
 dw = DataWrangler()
 
-count = 0
+count = 1
 ib = IBClient()
 mkt_data = Queue()
 
@@ -31,11 +31,13 @@ def mkt_stream():
     global mkt_data
     def generate():
         while True:
-            if mkt_data.qsize() > 0:
-                data = mkt_data.get()
+            time.sleep(0.001)
+            while mkt_data.qsize() > 0:
+                data = mkt_data.get_nowait()
                 for d in data:
-                    print("Sending data", d)
-                    yield f"data: {str(d)}\n\n"
+                    jsonData = str(d).replace("'", '"')
+                    print("Sending data", jsonData)
+                    yield f"data: {str(jsonData)}\n\n"
     return Response(generate(), mimetype='text/event-stream')
 
 @app.route('/get_potential_pair', methods=['GET'])
@@ -151,6 +153,14 @@ def ibkr_get_market_data():
     time.sleep(0.6)
     #print(str(ib.get_data(req_id)))
     return str(ib.get_data(req_id))
+
+@app.route('/ibkr_cancel_live_data', methods=['GET'])
+def ibkr_cancel_live_data():
+    global ib
+
+    # Cancel live market data
+    ib.cancelLiveData()
+    return ""
 
 @app.route('/ibkr_get_historical_data', methods=['GET'])
 def ibkr_get_historical_data():

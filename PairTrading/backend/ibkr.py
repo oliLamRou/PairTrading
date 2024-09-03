@@ -12,6 +12,7 @@ class IBClient(EWrapper, EClient):
     def __init__(self):
         EClient.__init__(self, wrapper=self)
         self.current_id = 0
+        self._live_data_ids = {}
         self._data_buffer = {}
         self._data_queue = {}
         self.mktDataCallback: function = None
@@ -60,6 +61,11 @@ class IBClient(EWrapper, EClient):
             
         self.add_to_buffer(req_id, data)
 
+    def reqMktData(self, reqId: TickerId, contract: Contract, genericTickList: str, snapshot: bool, regulatorySnapshot: bool, mktDataOptions: TagValueList):
+        self._live_data_ids[reqId] = contract.symbol
+        print('Req market data, ', self._live_data_ids)
+        return super().reqMktData(reqId, contract, genericTickList, snapshot, regulatorySnapshot, mktDataOptions)
+    
     # callback when all historical data has been received
     def historicalDataEnd(self, req_id, start, end):
         self.buffer_to_data(req_id)
@@ -84,6 +90,14 @@ class IBClient(EWrapper, EClient):
 
     def execDetails(self, req_id, contract, execution):
         print(f"Execution Details - ID: {req_id}, Symbol: {contract.symbol}, SecType: {contract.secType}, Exchange: {contract.exchange}, Action: {execution.side}, Shares: {execution.shares}, Price: {execution.price}")
+
+    def cancelLiveData(self):
+        for k, v in self._live_data_ids.items():
+            self.cancelMktData(k)
+            print(f'cancel stream {k}, ticker is {v}')
+        
+        time.sleep(0.01)
+        self._live_data_ids.clear()
 
     #Data handling, will need to use proper queue
     def add_to_buffer(self, req_id, data):
