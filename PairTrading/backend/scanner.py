@@ -2,7 +2,6 @@ import time
 import itertools
 
 import pandas as pd
-import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import coint
 
 from PairTrading.backend.data_wrangler import DataWrangler
@@ -58,6 +57,7 @@ class Scanner(DataWrangler):
     @property
     def snapshot_filter(self) -> set:
         market_snapshot_df = self.market_snapshot()
+        print(market_snapshot_df)
         df = market_snapshot_df[
             (market_snapshot_df.close >= self.min_price) &
             (market_snapshot_df.close <= self.max_price) & 
@@ -66,7 +66,7 @@ class Scanner(DataWrangler):
         ]['ticker'].to_list()
         return set(df)
 
-    #@property
+    @property
     def get_pairs(self) -> pd.DataFrame():
         if not self.sic:
             return pd.DataFrame()
@@ -101,23 +101,22 @@ class Scanner(DataWrangler):
             ]
             pair_df.loc[pair_df.size, self.PAIRS_COLUMNS] = values
 
-        print('Scanner GET PAIRS', pair_df)
         return pair_df.reset_index(drop=True)
 
-    def update_db(self):
-        self.min_price = 2
-        self.max_price = 200
-        self.min_vol = 100
-        tickers = self.snapshot_filter
-        for ticker in tickers:
-            if not self._DataWrangler__polygon_db.has_value('ticker_details', 'ticker', ticker):
-                print(f'/// Doing {ticker}')
-                df = self.ticker_info(ticker)
-                missing = set(tickers).difference(set(self._DataWrangler__polygon_db.get_table('ticker_details').ticker.to_list()))
-                print(f'-> {len(missing)} to download\n')
-                time.sleep(13)
-            else:
-                print('DONE:', ticker)
+    # def update_db(self):
+    #     self.min_price = 2
+    #     self.max_price = 200
+    #     self.min_vol = 100
+    #     tickers = self.snapshot_filter
+    #     for ticker in tickers:
+    #         if not self._DataWrangler__polygon_db.has_value('ticker_details', 'ticker', ticker):
+    #             print(f'/// Doing {ticker}')
+    #             df = self.ticker_info(ticker)
+    #             missing = set(tickers).difference(set(self._DataWrangler__polygon_db.get_table('ticker_details').ticker.to_list()))
+    #             print(f'-> {len(missing)} to download\n')
+    #             time.sleep(13)
+    #         else:
+    #             print('DONE:', ticker)
 
 if __name__ == '__main__':
     s = Scanner()
@@ -125,3 +124,4 @@ if __name__ == '__main__':
     s.max_price = 200
     s.min_vol = 100
     s.industry = 'REAL ESTATE'
+    print(s.get_pairs)

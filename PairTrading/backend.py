@@ -35,7 +35,7 @@ def get_pairs():
     industry = request.args.get('industry')
     if industry:
         s.industry = industry
-        df = s.get_pairs()
+        df = s.get_pairs
         print('BACKEND', df)
         return df.to_json(orient='records')
 

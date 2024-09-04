@@ -29,7 +29,7 @@ export const usePairForm = defineStore('pairForm',{
     },
 
     async load(){
-    	  this.pairs[this.pair] = {A: this.A, B: this.B};
+        this.pairs[this.pair] = {A: this.A, B: this.B};
         const data = await this.fetchPairInfo(this.pairs[this.pair].A, this.pairs[this.pair].B);
         this.pairs[this.pair] = {
           A:            data.A            ? data.A                    : this.A,
@@ -42,7 +42,7 @@ export const usePairForm = defineStore('pairForm',{
           std_dev:      data.std_dev      ? data.std_dev              : 2,
         }
         this.fetch_market_data()
-	  },
+    },
     async fetchPairInfo(A, B) {
       try {
         const response = await axios.get('http://localhost:5002/get_pair_info', {
