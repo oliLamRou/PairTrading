@@ -23,8 +23,8 @@
 
   const fetchIndustries = async () => {
     try {
-      const response = await axios.get('http://localhost:5002/get_potential_pair');
-      industries.value = response.data;
+      const response = await axios.get('http://localhost:5002/potential_pair');
+      industries.value = JSON.parse(response.data);
     } catch (error) {
       console.error(error);
     }
@@ -33,7 +33,7 @@
   const fetchPairs = async (industry) => {
     loading.value = true;
     try {
-      const response = await axios.get('http://localhost:5002/get_pairs', {
+      const response = await axios.get('http://localhost:5002/pairs', {
         params: {
           industry: industry, 
           min_price: min_price.value,
@@ -42,7 +42,7 @@
           max_volume: max_volume.value,
         }
       });
-      pairs.value = response.data;
+      pairs.value = JSON.parse(response.data);
       loading.value = false;
     } catch (error) {
       console.error(error);
@@ -51,11 +51,12 @@
   };
 
   const fetch_company_info = async (industry) => {
+    console.log('company_info')
     try {
       const response = await axios.get('http://localhost:5002/company_info', {
         params: {industry: industry}
       });
-      company_info.value = response.data;
+      company_info.value = JSON.parse(response.data);
     } catch (error) {
       console.error(error);
     }
@@ -75,13 +76,11 @@
   watch(industries, (newIndustries) => {
         if (newIndustries) {
             rowData.value = newIndustries;
-            console.log("fetched indu")
         }
     });
 
   watch(selectedIndustry, (newIndustry) => {
     if (newIndustry) {
-      console.log('CHANGE')
       fetchPairs(newIndustry)
       loading.value = false;
       fetch_company_info(newIndustry)
