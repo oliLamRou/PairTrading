@@ -16,13 +16,13 @@ export const usePairForm = defineStore('pairForm',{
   actions:{
     async fetch_market_data(){
       try {
-        const response = await axios.get('http://localhost:5002/get_market_data', {
+        const response = await axios.get('http://localhost:5002/market_data', {
           params: { tickers: [this.A,this.B] },
           paramsSerializer: params => {
             return qs.stringify(params, { arrayFormat: 'repeat' });
           }
         });
-        this.pairs[this.pair].data = response.data;
+        this.pairs[this.pair].data = JSON.parse(response.data);
       } catch (error) {
         console.log(error);
       }
@@ -30,7 +30,7 @@ export const usePairForm = defineStore('pairForm',{
 
     async load(){
         this.pairs[this.pair] = {A: this.A, B: this.B};
-        const data = await this.fetchPairInfo(this.pairs[this.pair].A, this.pairs[this.pair].B);
+        const data = await this.fetchPairInfo(this.A, this.B);
         this.pairs[this.pair] = {
           A:            data.A            ? data.A                    : this.A,
           B:            data.B            ? data.B                    : this.B,
@@ -45,23 +45,22 @@ export const usePairForm = defineStore('pairForm',{
     },
     async fetchPairInfo(A, B) {
       try {
-        const response = await axios.get('http://localhost:5002/get_pair_info', {
-          params: { tickers: this.pair.split('__') },
+        const response = await axios.get('http://localhost:5002/pair_info', {
+          params: { tickers: [this.A,this.B] },
           paramsSerializer: params => {
             return qs.stringify(params, { arrayFormat: 'repeat' });
           }
         });
-        return response.data
+        return JSON.parse(response.data)
       } catch (error) {
         console.log(error);
       }
     },
 
     async save(){
-      console.log('HERE', this.pairs[this.pair])
       try {
-        const response = await axios.post('http://localhost:5002/update_pair_info', {
-          pairInfo: this.pairs[this.pair]
+        const response = await axios.put('http://localhost:5002/pair_info', {
+          pair_info: this.pairs[this.pair]
         });
         console.log('updated', response.data)
       } catch (error) {

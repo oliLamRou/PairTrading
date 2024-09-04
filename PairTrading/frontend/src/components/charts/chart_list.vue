@@ -19,13 +19,13 @@
 
   const fetch_market_data = async () => {
     try {
-      const response = await axios.get('http://localhost:5002/get_market_data', {
+      const response = await axios.get('http://localhost:5002/market_data', {
         params: { tickers: uniqueTicker.value },
         paramsSerializer: params => {
          return qs.stringify(params, { arrayFormat: 'repeat' });
         }
       });
-      data.value = response.data;
+      data.value = JSON.parse(response.data);
     } catch (error) {
       console.log(error);
     }

@@ -39,7 +39,8 @@ class UserWrangler:
         self.is_good_pair(tickers)
 
         pair_info = self.format_pair_info_dict(tickers, pair_info)
-        del pair_info['data']
+        if pair_info.get('data'):
+            del pair_info['data']
 
         if self.get_pair_info(tickers).empty:
             user_session.add(PairInfo(**pair_info))

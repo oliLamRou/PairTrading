@@ -3,13 +3,15 @@ import itertools
 
 import pandas as pd
 from statsmodels.tsa.stattools import coint
+from flask_restful import Resource, reqparse
+from flask import request
 
 from PairTrading.backend.data_wrangler import DataWrangler
 
-class Scanner(DataWrangler):
+class Scanner(DataWrangler, Resource):
     PAIRS_COLUMNS = ['A', 'B', 'A_avg_vol', 'B_avg_vol', 'avg_diff', 'coint', 'rank']
     def __init__(self):
-        super().__init__()
+        DataWrangler.__init__(self)
         self._pair_df = pd.DataFrame()
 
         #Sector
@@ -32,6 +34,9 @@ class Scanner(DataWrangler):
 
         self.tickers = set(self.all_ticker_info['ticker'].to_list())
         self.bad_tickers = []
+
+        #API
+        self.parser = reqparse.RequestParser()
 
     @property
     def potential_pair(self) -> pd.DataFrame():
@@ -57,7 +62,6 @@ class Scanner(DataWrangler):
     @property
     def snapshot_filter(self) -> set:
         market_snapshot_df = self.market_snapshot()
-        print(market_snapshot_df)
         df = market_snapshot_df[
             (market_snapshot_df.close >= self.min_price) &
             (market_snapshot_df.close <= self.max_price) & 
@@ -103,6 +107,31 @@ class Scanner(DataWrangler):
 
         return pair_df.reset_index(drop=True)
 
+    def get(self):
+        if request.path == '/potential_pair':
+            return self.potential_pair.to_json(orient='records')
+
+        elif request.path == '/pairs':
+            min_price = request.args.get('min_price', type=float)
+            max_price = request.args.get('max_price', type=float)
+            min_volume = request.args.get('min_volume', type=float)
+            max_volume = request.args.get('max_volume', type=float)
+            industry = request.args.get('industry', type=str)
+            if min_price and max_price and min_volume and max_volume and industry:
+                self.min_price  = min_price
+                self.max_price  = max_price
+                self.min_vol    = min_volume
+                self.max_vol    = max_volume
+                self.industry   = industry
+                df = self.get_pairs
+                return df.to_json(orient='records')
+
+            return {}
+            
+        else:
+            print('wrong')
+
+
     # def update_db(self):
     #     self.min_price = 2
     #     self.max_price = 200
@@ -124,4 +153,4 @@ if __name__ == '__main__':
     s.max_price = 200
     s.min_vol = 100
     s.industry = 'REAL ESTATE'
-    print(s.get_pairs)
+    # print(s.get_pairs)
