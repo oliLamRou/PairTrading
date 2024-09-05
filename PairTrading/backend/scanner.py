@@ -49,7 +49,7 @@ class Scanner(DataWrangler, Resource):
 
             df.loc[df.industry.size, ['industry', 'potential_pair']] = [row.industry_title, len(snapshot_tickers) ** 2]
 
-        return df.sort_values('potential_pair').reset_index(drop=True)
+        return df.sort_values('potential_pair', ascending=False).reset_index(drop=True)
 
     @property
     def sic(self) -> list:
