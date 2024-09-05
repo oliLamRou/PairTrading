@@ -95,15 +95,76 @@ export const useIbkr = defineStore('ibkr',{
         //console.log(this.chartData)
     },
     async updateLastBar(){
-        const currentBar = this.chartData.A[this.chartData.A.length -1]
-        const newClose = this.liveData[this.pairStore.B]["LAST"]
+        //console.log('barSize: ', this.barSize)
+        const currentBarA = this.chartData.A[this.chartData.A.length -1]
+        const currentBarB = this.chartData.B[this.chartData.B.length -1]
+        const newCloseA = this.liveData[this.pairStore.A]["LAST"]
+        const newCloseB = this.liveData[this.pairStore.B]["LAST"]
 
-        console.log("newCLose:", newClose)
-        console.log("old CLose:", this.chartData.A[this.chartData.A.length -1]["close"])
+        //console.log("newCLose:", newClose)
+        //console.log("old CLose:", this.chartData.A[this.chartData.A.length -1]["close"])
 
-        this.chartData.B[this.chartData.B.length -1]["close"] = newClose
+        currentBarA["close"] = newCloseA
+        currentBarB["close"] = newCloseB
+
+        if (newCloseA > currentBarA['high']){
+            currentBarA['high'] = newCloseA
+        } 
+        
+        else if (newCloseA < currentBarA['low']){
+            currentBarA['low'] = newCloseA
+        }
+        
+        if (newCloseB > currentBarB['high']){
+            currentBarB['high'] = newCloseB
+        } 
+        else if (newCloseB < currentBarB['low']){
+            currentBarB['low'] = newCloseB
+        }
+
+        let nowDate = new Date();
+        nowDate.setSeconds(0, 0)
+        let now = nowDate.getTime() / 1000
+
+        const hedge_ratio = this.pairStore.pairs[this.pairStore.pair]?.hedge_ratio;
+        const reverse = this.pairStore.pairs[this.pairStore.pair]?.reverse;        
+        const newBarPairPrice = {
+            time: now,
+            open: reverse ? currentBarB['open'] - (currentBarA['open'] * hedge_ratio) : currentBarA['open'] - (currentBarB['open'] * hedge_ratio),
+            close: reverse ? currentBarB['close'] - (currentBarA['close'] * hedge_ratio) : currentBarA['close'] - (currentBarB['close'] * hedge_ratio),
+            high: reverse ? currentBarB['high'] - (currentBarA['high'] * hedge_ratio) : currentBarA['high'] - (currentBarB['high'] * hedge_ratio),
+            low: reverse ? currentBarB['low'] - (currentBarA['low'] * hedge_ratio) : currentBarA['low'] - (currentBarB['low'] * hedge_ratio)
+        }
+        const newBarA = {
+            time: now,
+            open: newCloseA,
+            close: newCloseA,
+            high: newCloseA,
+            low: newCloseA,            
+        }
+        const newBarB = {
+            time: now,
+            open: newCloseB,
+            close: newCloseB,
+            high: newCloseB,
+            low: newCloseB,            
+        }
+
+        let lastTime = this.chartData["pairPrice"][this.chartData["pairPrice"].length -1].time
+        
+        if(now > lastTime){
+            //console.log('push bar')
+            this.chartData.A.push(newBarA)
+            this.chartData.B.push(newBarB)
+            this.chartData["pairPrice"].push(newBarPairPrice)
+        } else {
+            //console.log('update bar')
+            this.chartData["pairPrice"][this.chartData["pairPrice"].length -1] = newBarPairPrice
+        }
+        
+        //this.chartData["pairPrice"].push(newBar)
         //this.chartData.B[this.chartData.B.length -1]["time"] = Date.now() / 1000
-        this.calculatePairPrice()
+        //this.calculatePairPrice()
     },
     async appendMarketData(data){
         let reqId = data["req_id"]
@@ -154,7 +215,6 @@ export const useIbkr = defineStore('ibkr',{
         const hedge_ratio = this.pairStore.pairs[this.pairStore.pair]?.hedge_ratio;
         const reverse = this.pairStore.pairs[this.pairStore.pair]?.reverse;
         //if (!data.value || !data.value.length) return [];
-        console.log('data')
         const result = Object.values(
         data.reduce((acc, { time, close, open, high, low, ticker }) => {
         if (!acc[time]) {
@@ -201,6 +261,7 @@ export const useIbkr = defineStore('ibkr',{
             );
             //return dataA.value;
             this.chartData["pairPrice"] = result
+            console.log(result)
             return result;
         }
     }

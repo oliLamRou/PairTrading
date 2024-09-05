@@ -39,6 +39,10 @@
 		ibkr.liveMarketData(selectedPair.value.split('__')[1])
     }
 
+	const connectIbkr = () => {
+		ibkr.connect()
+	}
+
 	const getWatchlist = async () => {
 		try {
 			const response = await axios.get('http://localhost:5002/get_watchlist');
@@ -62,6 +66,7 @@
 		</div>
 		<div class="col-md-7">
 			<button @click="cancelStream()">cancel streams</button>
+			<button @click="connectIbkr()">connect IBKR</button>
 		</div>
 		<div class="col-md-2">
 

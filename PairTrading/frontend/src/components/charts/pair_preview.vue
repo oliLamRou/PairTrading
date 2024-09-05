@@ -23,7 +23,7 @@
   let interval = null;
   
   onMounted( async () => {
-    await ibkr.connect();
+    // await ibkr.connect();
   })
 
   const test = () => {
