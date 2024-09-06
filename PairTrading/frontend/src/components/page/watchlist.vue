@@ -33,10 +33,11 @@
 	})
 
     const onRowClicked = async (value) => {
-		selectedPair.value = value.data.pair
+		console.log(value.data)
+		selectedPair.value = [value.data.pair.split('__')[0], value.data.pair.split('__')[1]]
 		await ibkr.cancelAllLiveData()
-		ibkr.liveMarketData(selectedPair.value.split('__')[0])
-		ibkr.liveMarketData(selectedPair.value.split('__')[1])
+		ibkr.liveMarketData(selectedPair.value[0])
+		ibkr.liveMarketData(selectedPair.value[1])
     }
 
 	const connectIbkr = () => {

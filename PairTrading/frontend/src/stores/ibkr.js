@@ -16,6 +16,17 @@ export const useIbkr = defineStore('ibkr',{
   }),
   getters: {
     //A() { return this.pair.split('__')[0] },
+    pairPrice() { 
+        console.log("chartData: ", this.chartData.pairPrice)
+        if (typeof(this.chartData.pairPrice) === "undefined"){ return 0}
+        let len = Object.keys(this.chartData.pairPrice).length
+        if (len > 0){
+            console.log(this.chartData.pairPrice[len -1].close)
+            return this.chartData.pairPrice[len -1].close
+            //return this.chartData.pairPrice[this.chartData.pairPrice.length -1].close
+        }
+        return ""
+    }
   },
   actions:{
     async connect(){
@@ -95,36 +106,33 @@ export const useIbkr = defineStore('ibkr',{
         //console.log(this.chartData)
     },
     async updateLastBar(){
+        console.log(this.barSize.split(' '))
+        let nowDate = new Date();
+        nowDate.setSeconds(0, 0)
+        let now = nowDate.getTime() / 1000
+        if (!Object.keys(this.chartData).length){
+            return
+        }
         //console.log('barSize: ', this.barSize)
         const currentBarA = this.chartData.A[this.chartData.A.length -1]
         const currentBarB = this.chartData.B[this.chartData.B.length -1]
         const newCloseA = this.liveData[this.pairStore.A]["LAST"]
         const newCloseB = this.liveData[this.pairStore.B]["LAST"]
 
-        //console.log("newCLose:", newClose)
-        //console.log("old CLose:", this.chartData.A[this.chartData.A.length -1]["close"])
-
         currentBarA["close"] = newCloseA
         currentBarB["close"] = newCloseB
 
         if (newCloseA > currentBarA['high']){
             currentBarA['high'] = newCloseA
-        } 
-        
-        else if (newCloseA < currentBarA['low']){
+        } else if (newCloseA < currentBarA['low']){
             currentBarA['low'] = newCloseA
         }
         
         if (newCloseB > currentBarB['high']){
             currentBarB['high'] = newCloseB
-        } 
-        else if (newCloseB < currentBarB['low']){
+        } else if (newCloseB < currentBarB['low']){
             currentBarB['low'] = newCloseB
         }
-
-        let nowDate = new Date();
-        nowDate.setSeconds(0, 0)
-        let now = nowDate.getTime() / 1000
 
         const hedge_ratio = this.pairStore.pairs[this.pairStore.pair]?.hedge_ratio;
         const reverse = this.pairStore.pairs[this.pairStore.pair]?.reverse;        

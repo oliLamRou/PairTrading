@@ -3,33 +3,28 @@
     import { ref, onMounted, onBeforeMount, watch, reactive, computed, onUnmounted, onBeforeUnmount } from 'vue'
     import axios from 'axios'
     import { useIbkr } from '@/stores/ibkr';
+    import { usePairForm } from '@/stores/pairs';
 
     const props = defineProps([
-        'pair'
+        'pair',
     ]);
+    const userInput = reactive({
+        orderSize: 100,
+    })
     const marketData = ref("")
     const orderId = ref("")
     const orderStatus = ref("")
     const ibkr = useIbkr();
+    const pairStore = usePairForm();
+    
 
     const long = () => {
         console.log("long")
     }
     onMounted( async () => {
         console.log("trader")
-        marketData.value = ibkr.liveData
-        //marketData.value = ibkr.getMarketData("AAPL")
-        // const eventSource = new EventSource('http://127.0.0.1:5002/ibkr_stream/market_data');
-        // eventSource.onmessage = (event) => {
-        //     console.log(event.data)
-        //     marketData.value = event.data
-        // }
+        //marketData.value = ibkr.liveData
     })
-
-    const getMarketData = async () => {
-        //marketData.value = await ibkr.liveMarketData("AAPL")
-        console.log(marketData.value)
-    }
 
     const placeOrder = async () => {
         response = await ibkr.placeOrder('AAPL', 10, 30, 'BUY', 'LMT')
@@ -40,6 +35,18 @@
     const getOrderStatus = async () => {
         response = await ibkr.getOrderStatus(orderId.value)
         console.log(response)
+    }
+
+    const getLiveData = (ticker, key) => {
+        if (!Object.keys(ibkr.liveData).length){
+            return ""
+        }
+        try {
+            return ibkr.liveData[ticker][key];
+        } catch (error) {
+            //console.log(error);
+        }
+        return ""
     }
 </script>
 
@@ -53,7 +60,7 @@
         </div>
         <div class="card-body">
             <div class="row">
-                <div class="col"><h4>{{ pair }}</h4></div>
+                <div class="col"><h4>{{ pairStore.A+' - '+pairStore.B }}</h4></div>
                 <div class="col"><span class="bold">Position: </span> -150</div>
             </div>
             <div class="row">
@@ -61,16 +68,30 @@
             </div>
             <div class="row">
                 <div class="col">
-                    <li><span class="bold">Pair Price: </span> 2$</li>
-                    <li><span class="bold">Hedge Ratio </span> 0.94</li>
-                    <li><span class="bold">Reverse: </span> False</li>
+                    <li><span class="bold">Pair Price: </span> {{ ibkr.pairPrice }}$ </li>
+                    <li><span class="bold">Hedge Ratio </span> {{ pairStore.hedgeRatio }}</li>
+                    <li><span class="bold">Reverse: </span> {{ pairStore.reverse }}</li>
                 </div>
             </div>
             <hr>
             <div>  
-                <button @click="getMarketData()">Get mkt Data</button>
+                <!-- <button @click="getMarketData()">Get mkt Data</button> -->
+                
+                <div class="row" v-if="pairStore">
+                    <div class="col">
+                        <h5>{{ pairStore.A }}</h5>
+                        <li><span class="bold">Last: </span> {{ getLiveData(pairStore.A, "LAST") }} </li>
+                        <li><span class="bold">Bid: </span> {{ getLiveData(pairStore.A, "BID") }} </li>
+                        <li><span class="bold">Ask: </span> {{ getLiveData(pairStore.A, "ASK") }} </li>
+                    </div>
+                    <div class="col">
+                        <h5>{{ pairStore.B }}</h5>
+                        <li><span class="bold">Last: </span> {{ getLiveData(pairStore.B, "LAST") }} </li>
+                        <li><span class="bold">Bid: </span> {{ getLiveData(pairStore.B, "BID") }} </li>
+                        <li><span class="bold">Ask: </span> {{ getLiveData(pairStore.B, "ASK") }} </li>
+                    </div>
+                </div>
 
-                {{ ibkr.liveData }}
             </div>
             <hr>
             <div class="row">
@@ -81,10 +102,19 @@
 
             <div class="row">
                 <div class="col">
-                    <span class="bold">Shares </span><input width="2">
+                    <span class="input-group-text" id="inputGroup-sizing-sm">Shares</span>
+                    <input type="number" class="form-control" step="1" aria-label="Sizing example input" aria-describedby="inputGroup-sizing-sm" value=1 v-model="userInput.orderSize">
                 </div>
                 <div class="col">
-                    <span class="bold">Amount: </span>0$
+                    <li><span class="bold">{{ pairStore.A }} amount: </span> {{ userInput.orderSize }}</li>
+                    <li><span class="bold">{{ pairStore.B }} amount: </span> {{ Math.round(userInput.orderSize * pairStore.hedgeRatio) }}</li>
+                </div>
+                
+            </div>
+            <div class="row">
+                <div class="col">
+                    <li><span class="bold">Cost A: </span> {{ getLiveData(pairStore.A, "LAST") * userInput.orderSize }}$</li>
+                    <li><span class="bold">Cost B: </span> {{ getLiveData(pairStore.B, "LAST") * userInput.orderSize }}$</li>
                 </div>
             </div>
 

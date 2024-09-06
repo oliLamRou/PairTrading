@@ -40,7 +40,7 @@
     if (newPair) {
       isDataLoaded.value = false;
       console.log('Changed Pair: ', newPair)
-      updatePair(newPair)
+      updatePair(newPair[0]+"__"+newPair[1])
     }
   });
 
@@ -67,31 +67,18 @@
 
       relaodData()
       //startInterval();
-
   }
 
   const relaodData = async () => {
-    //const newDataA = await ibkr.getHistoricalData(store.A, candleSize.value, chartLength.value)
-    //const newDataB = await ibkr.getHistoricalData(store.B, candleSize.value, chartLength.value)
-    //if (newDataA.length > 0){ dataA.value = newDataA };
-    //if (newDataB.length > 0){ dataB.value = newDataB };
     ibkr.barSize = candleSize.value
     ibkr.chartLength = chartLength.value
     await ibkr.updatePairData()
-    //console.log('data loaded, length: ', newDataA.length, newDataB.length)
-    //chartData.value = ibkr.calculatePairPrice()
-
-    //chartData.value = accPairPrice()
-    //chartData.value = pairPrice()
-    //console.log(dataA.value)
   }
 
   const updatePair = async (newPair) => {
     isDataLoaded.value = false
     store.pair = newPair;
     await store.load();
-    //ibkr.pairInfo[A] = store.A
-    //ibkr.pairInfo[B] = store.B
     await relaodData()
     isDataLoaded.value = true;
   }
@@ -180,7 +167,7 @@
       <div class="col">
         <div class="card">
           <!-- Candle -->
-          <LWChart :A="ibkr.chartData['pairPrice']" :type="'candle'" :watermark="pair" v-if="isDataLoaded"/>
+          <LWChart :A="ibkr.chartData['pairPrice']" :type="'candle'" :watermark="pair.toString()" v-if="isDataLoaded"/>
 
         </div>
       </div>

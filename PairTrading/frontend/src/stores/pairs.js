@@ -5,12 +5,34 @@ import qs from 'qs';
 
 export const usePairForm = defineStore('pairForm',{
   state:()=>({
-    pair: "F__F",
+    pair: "",
     pairs:{}
   }),
   getters: {
     A() { return this.pair.split('__')[0] },
     B() { return this.pair.split('__')[1] },
+    hedgeRatio() { 
+      if (!Object.keys(this.pairs).length){
+        return ""
+      }
+      try{
+        return this.pairs[this.pair].hedge_ratio
+      } catch (error) {
+        console.log(error)
+        return ""
+      }
+    },
+    reverse() { 
+      if (!Object.keys(this.pairs).length){
+        return ""
+      }
+      try{
+        return this.pairs[this.pair].reverse
+      } catch (error) {
+        console.log(error)
+        return ""
+      }
+    },
   },
   actions:{
     async fetch_market_data(){
