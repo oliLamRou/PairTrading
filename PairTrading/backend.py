@@ -219,14 +219,16 @@ def ibkr_place_order():
     order.orderType = orderType
     order.eTradeOnly = False
     order.firmQuoteOnly = False
+    order.outsideRth = True
     if orderType == 'LMT':
         order.lmtPrice = price
 
     global ib
-    req_id = ib.next_id()
-    ib.placeOrder(req_id, contract, order)
+    id = ib.nextOrderId
+    print('next order id: ', id)
+    ib.placeOrder(id, contract, order)
 
-    return req_id
+    return str(id)
 
 @app.route('/ibkr_order_status', methods=['GET'])
 def ibkr_order_status():
@@ -241,7 +243,7 @@ def ibkr_order_status():
     req_id = ib.next_id()
     ib.orderStatus(req_id, id)
 
-    return req_id
+    return str(req_id)
 
 def ib_connect():
     global count

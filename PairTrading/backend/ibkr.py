@@ -12,6 +12,7 @@ class IBClient(EWrapper, EClient):
     def __init__(self):
         EClient.__init__(self, wrapper=self)
         self.current_id = 0
+        self.nextOrderId = None  # Will store the next valid order ID
         self._live_data_ids = {}
         self._data_buffer = {}
         self._data_queue = {}
@@ -20,6 +21,11 @@ class IBClient(EWrapper, EClient):
     def next_id(self):
         self.current_id += 1
         return self.current_id
+    
+    def nextValidId(self, orderId):
+        #Callback function that is called with the next valid order ID
+        print(f"Next valid order ID: {orderId}")
+        self.nextOrderId = orderId + 1
 
     def error(self, req_id, code, msg):
         if code in [2104, 2106, 2158]:
@@ -33,14 +39,14 @@ class IBClient(EWrapper, EClient):
             self.mktDataCallback(data)
 
         #self.add_to_data(req_id, {'tickType' : TickTypeEnum.to_str(tickType), 'price': price})
-        print(f"Tick Price. Request Id: {req_id}, tickType: {TickTypeEnum.to_str(tickType)}, Price: {price}")
+        #print(f"Tick Price. Request Id: {req_id}, tickType: {TickTypeEnum.to_str(tickType)}, Price: {price}")
 
     def tickSize(self, req_id, tickType, size):
         data = [{'req_id': req_id, 'tickType' : TickTypeEnum.to_str(tickType), 'size': size}]
         if self.mktDataCallback is not None:
             self.mktDataCallback(data)
             
-        print(f"Tick Size. Ticker Id: {req_id}, tickType: {TickTypeEnum.to_str(tickType)}, Size: {size}")
+        #print(f"Tick Size. Ticker Id: {req_id}, tickType: {TickTypeEnum.to_str(tickType)}, Size: {size}")
 
     def historicalData(self, req_id, bar):
         if len(bar.date.split("  ")) == 2:
@@ -96,7 +102,7 @@ class IBClient(EWrapper, EClient):
             self.cancelMktData(k)
             print(f'cancel stream {k}, ticker is {v}')
         
-        time.sleep(0.01)
+        time.sleep(0.05)
         self._live_data_ids.clear()
 
     #Data handling, will need to use proper queue
@@ -147,10 +153,6 @@ if __name__ == '__main__':
     
     #ib.run()
 
-    
-    
-
-    
     # Keep the event loop running
     #ib.run()
     print('what')

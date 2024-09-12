@@ -17,7 +17,6 @@
     const ibkr = useIbkr();
     const pairStore = usePairForm();
     
-
     const long = () => {
         console.log("long")
     }
@@ -26,8 +25,17 @@
         //marketData.value = ibkr.liveData
     })
 
-    const placeOrder = async () => {
-        response = await ibkr.placeOrder('AAPL', 10, 30, 'BUY', 'LMT')
+    const placeOrder = async (type) => {
+        if(type === 'long'){
+            let sizeA = userInput.orderSize
+            let sizeB = Math.round(sizeA * pairStore.hedgeRatio)
+            let priceA = getLiveData(pairStore.A, "BID")
+            let priceB = getLiveData(pairStore.B, "BID")
+            await ibkr.placeOrder("F", 10, 10, 'BUY', 'LMT')
+            //await ibkr.placeOrder(pairStore.A, 10, 10, 'BUY', 'LMT')
+            //await ibkr.placeOrder(pairStore.B, 10, 10, 'SELL', 'LMT')
+        }
+        
         orderId.value = response
         console.log(response)
     }
@@ -42,7 +50,11 @@
             return ""
         }
         try {
-            return ibkr.liveData[ticker][key];
+            let data = ibkr.liveData[ticker][key];
+            if(typeof(data) === 'undefined'){
+                data = ibkr.chartData.A
+            }
+            return data
         } catch (error) {
             //console.log(error);
         }
@@ -121,7 +133,7 @@
             <div class="row">
                 <div class="col">
                     <br>
-                    <button @click="placeOrder()">Long</button>
+                    <button @click="placeOrder('long')">Long</button>
                     <button @click="short">Short</button>
                     <button @click="closePosition">Close Position</button>
                 </div>

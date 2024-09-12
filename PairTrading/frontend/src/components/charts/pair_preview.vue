@@ -168,9 +168,10 @@
         <div class="card">
           <!-- Candle -->
           <LWChart :A="ibkr.chartData['pairPrice']" :type="'candle'" :watermark="pair.toString()" v-if="isDataLoaded"/>
-
+          <LWChart :A="ibkr.chartData.A" :type="'candle'" :watermark="pair[0]" v-if="isDataLoaded"/>
+          <LWChart :A="ibkr.chartData.B" :type="'candle'" :watermark="pair[1]" v-if="isDataLoaded"/>
         </div>
-      </div>
+      </div>    
     </div>
   </div>
 </template>
