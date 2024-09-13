@@ -12,11 +12,16 @@ class IBClient(EWrapper, EClient):
     def __init__(self):
         EClient.__init__(self, wrapper=self)
         self.current_id = 0
-        self.nextOrderId = None  # Will store the next valid order ID
+        self._nextOrderId = None  # Will store the next valid order ID
         self._live_data_ids = {}
         self._data_buffer = {}
         self._data_queue = {}
         self.mktDataCallback: function = None
+
+    @property
+    def nextOrderId(self):
+        self._nextOrderId += 1
+        return self._nextOrderId
 
     def next_id(self):
         self.current_id += 1
@@ -25,7 +30,7 @@ class IBClient(EWrapper, EClient):
     def nextValidId(self, orderId):
         #Callback function that is called with the next valid order ID
         print(f"Next valid order ID: {orderId}")
-        self.nextOrderId = orderId + 1
+        self._nextOrderId = orderId
 
     def error(self, req_id, code, msg):
         if code in [2104, 2106, 2158]:
@@ -44,9 +49,18 @@ class IBClient(EWrapper, EClient):
     def tickSize(self, req_id, tickType, size):
         data = [{'req_id': req_id, 'tickType' : TickTypeEnum.to_str(tickType), 'size': size}]
         if self.mktDataCallback is not None:
-            self.mktDataCallback(data)
-            
+            self.mktDataCallback(data)    
         #print(f"Tick Size. Ticker Id: {req_id}, tickType: {TickTypeEnum.to_str(tickType)}, Size: {size}")
+    
+    def orderStatus(self, orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld, mktCapPrice):
+        print(f"Order Status - ID: {orderId}, Status: {status}, Filled: {filled}, Remaining: {remaining}, Avg Fill Price: {avgFillPrice}")
+
+    def openOrder(self, orderId, contract, order, orderState):
+        print(f"Open Order - ID: {orderId}, Symbol: {contract.symbol}, Action: {order.action}, OrderType: {order.orderType}, Quantity: {order.totalQuantity}")
+
+    def execDetails(self, reqId, contract, execution):
+        print(f"Execution Details - OrderID: {reqId}, Symbol: {contract.symbol}, Shares: {execution.shares}, Price: {execution.price}")
+
 
     def historicalData(self, req_id, bar):
         if len(bar.date.split("  ")) == 2:

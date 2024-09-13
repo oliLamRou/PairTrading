@@ -45,6 +45,7 @@ def get_potential_pair():
     df = s.potential_pair.sort_values('potential_pair', ascending=False)
     return df.to_json(orient='records')
 
+
 @app.route('/get_pairs', methods=['GET'])
 def get_pairs():
     min_price = request.args.get('min_price', type=float)
@@ -225,7 +226,8 @@ def ibkr_place_order():
 
     global ib
     id = ib.nextOrderId
-    print('next order id: ', id)
+    print('ORDER ID: ', id) 
+    #print('reqIds: ', ib.reqIds(-1))
     ib.placeOrder(id, contract, order)
 
     return str(id)

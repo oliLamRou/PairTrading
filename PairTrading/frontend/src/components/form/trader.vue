@@ -29,11 +29,11 @@
         if(type === 'long'){
             let sizeA = userInput.orderSize
             let sizeB = Math.round(sizeA * pairStore.hedgeRatio)
-            let priceA = getLiveData(pairStore.A, "BID")
+            let priceA = getLiveData(pairStore.A, "ASK")
             let priceB = getLiveData(pairStore.B, "BID")
-            await ibkr.placeOrder("F", 10, 10, 'BUY', 'LMT')
-            //await ibkr.placeOrder(pairStore.A, 10, 10, 'BUY', 'LMT')
-            //await ibkr.placeOrder(pairStore.B, 10, 10, 'SELL', 'LMT')
+            //await ibkr.placeOrder("F", 10, 10, 'BUY', 'LMT')
+            await ibkr.placeOrder(pairStore.A, sizeA, priceA, 'BUY', 'LMT')
+            await ibkr.placeOrder(pairStore.B, sizeB, priceB, 'SELL', 'LMT')
         }
         
         orderId.value = response
